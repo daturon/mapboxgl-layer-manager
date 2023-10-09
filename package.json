@@ -1,9 +1,14 @@
 {
   "name": "@daturon/mapboxgl-layer-manager",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "The Layer Manager for Mapbox GL is a versatile and user-friendly tool designed to streamline the management of map layers within the Mapbox GL environment. This tool simplifies the process of modifying layer order and adjusting and fine-tuning each layer's settings on a map.",
-  "main": "index.js",
+  "main": "dist/src/useLayerManager.js",
+  "types": "dist/src/useLayerManager.d.ts",
   "author": "Yury Marozau <daturon@gmail.com>",
+  "keywords": [
+    "mapboxgl",
+    "layer manager"
+  ],
   "license": "MIT",
   "homepage": "https://github.com/daturon/mapboxgl-layer-manager",
   "bugs": "https://github.com/daturon/mapboxgl-layer-manager",
