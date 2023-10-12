@@ -1,5 +1,7 @@
 import mapboxgl, { AnyLayout, AnyPaint } from "mapbox-gl";
 export interface LayerManager {
+    getCustomLayerIds: () => string[];
+    getCustomSourceIds: () => string[];
     renderOrderedLayers: (layerIds: string[], config?: Record<string, {
         filter: any[] | undefined;
         layout: AnyLayout | undefined;

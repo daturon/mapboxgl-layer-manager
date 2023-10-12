@@ -1,6 +1,8 @@
 import mapboxgl, { AnyLayer, AnyLayout, AnyPaint } from "mapbox-gl";
 
 export interface LayerManager {
+  getCustomLayerIds: () => string[];
+  getCustomSourceIds: () => string[];
   renderOrderedLayers: (
     layerIds: string[],
     config?: Record<
@@ -59,6 +61,8 @@ export const useLayerManager = (
   layers: mapboxgl.Layer[]
 ): LayerManager => {
   return {
+    getCustomLayerIds: () => layers.map((layer) => layer.id),
+    getCustomSourceIds: () => sources.map((source) => source.id),
     renderOrderedLayers: (
       layerIds: string[],
       layerConfigs?: Record<

@@ -12,6 +12,8 @@ var extendLayerWithConfig = function (layer, config) {
 };
 export var useLayerManager = function (map, sources, layers) {
     return {
+        getCustomLayerIds: function () { return layers.map(function (layer) { return layer.id; }); },
+        getCustomSourceIds: function () { return sources.map(function (source) { return source.id; }); },
         renderOrderedLayers: function (layerIds, layerConfigs) {
             if (!map)
                 return;
