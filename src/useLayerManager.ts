@@ -149,7 +149,10 @@ export const useLayerManager = (
 
       layerIds.forEach((layerId, index) => {
         const referenceLayerId = index === 0 ? undefined : layerIds[index - 1];
-        map.moveLayer(layerId, referenceLayerId);
+
+        if (typeof referenceLayerId !== "undefined") {
+          map.moveLayer(layerId, referenceLayerId);
+        }
       });
     },
     updateLayerFilter: (layerId: string, filter: mapboxgl.Expression) => {

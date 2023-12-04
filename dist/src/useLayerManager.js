@@ -71,7 +71,9 @@ export var useLayerManager = function (map, sources, layers) {
             layerIds = layerIds.slice().reverse();
             layerIds.forEach(function (layerId, index) {
                 var referenceLayerId = index === 0 ? undefined : layerIds[index - 1];
-                map.moveLayer(layerId, referenceLayerId);
+                if (typeof referenceLayerId !== "undefined") {
+                    map.moveLayer(layerId, referenceLayerId);
+                }
             });
         },
         updateLayerFilter: function (layerId, filter) {
