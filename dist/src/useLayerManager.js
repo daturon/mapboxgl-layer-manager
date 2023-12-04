@@ -14,7 +14,7 @@ export var useLayerManager = function (map, sources, layers) {
     return {
         getCustomLayerIds: function () { return layers.map(function (layer) { return layer.id; }); },
         getCustomSourceIds: function () { return sources.map(function (source) { return source.id; }); },
-        renderOrderedLayers: function (layerIds, layerConfigs) {
+        renderOrderedLayers: function (layerIds, layerConfigs, beforeLayerId) {
             if (!map)
                 return;
             var requiredSourceIds = [];
@@ -64,14 +64,12 @@ export var useLayerManager = function (map, sources, layers) {
                     if (layerConfigs === null || layerConfigs === void 0 ? void 0 : layerConfigs[layerId]) {
                         extendLayerWithConfig(newLayer, layerConfigs[layerId]);
                     }
-                    map.addLayer(newLayer);
+                    map.addLayer(newLayer, beforeLayerId);
                 }
             });
             // Move layers to the right order
-            layerIds
-                .slice()
-                .reverse()
-                .forEach(function (layerId, index) {
+            layerIds = layerIds.slice().reverse();
+            layerIds.forEach(function (layerId, index) {
                 var referenceLayerId = index === 0 ? undefined : layerIds[index - 1];
                 map.moveLayer(layerId, referenceLayerId);
             });

@@ -6,7 +6,7 @@ export interface LayerManager {
         filter: any[] | undefined;
         layout: AnyLayout | undefined;
         paint: AnyPaint | undefined;
-    }>) => void;
+    }>, beforeLayerId?: string) => void;
     updateLayerFilter: (layerId: string, filter: mapboxgl.Expression) => void;
     updateLayerLayout: (layerId: string, name: string, value: any, // eslint-disable-line @typescript-eslint/no-explicit-any
     options?: mapboxgl.FilterOptions | undefined) => void;

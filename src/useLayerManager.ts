@@ -12,7 +12,8 @@ export interface LayerManager {
         layout: AnyLayout | undefined;
         paint: AnyPaint | undefined;
       }
-    >
+    >,
+    beforeLayerId?: string
   ) => void;
   updateLayerFilter: (layerId: string, filter: mapboxgl.Expression) => void;
   updateLayerLayout: (
@@ -72,7 +73,8 @@ export const useLayerManager = (
           layout: AnyLayout | undefined;
           paint: AnyPaint | undefined;
         }
-      >
+      >,
+      beforeLayerId?: string
     ) => {
       if (!map) return;
 
@@ -138,19 +140,17 @@ export const useLayerManager = (
             extendLayerWithConfig(newLayer, layerConfigs[layerId]);
           }
 
-          map.addLayer(newLayer as AnyLayer);
+          map.addLayer(newLayer as AnyLayer, beforeLayerId);
         }
       });
 
       // Move layers to the right order
-      layerIds
-        .slice()
-        .reverse()
-        .forEach((layerId, index) => {
-          const referenceLayerId =
-            index === 0 ? undefined : layerIds[index - 1];
-          map.moveLayer(layerId, referenceLayerId);
-        });
+      layerIds = layerIds.slice().reverse();
+
+      layerIds.forEach((layerId, index) => {
+        const referenceLayerId = index === 0 ? undefined : layerIds[index - 1];
+        map.moveLayer(layerId, referenceLayerId);
+      });
     },
     updateLayerFilter: (layerId: string, filter: mapboxgl.Expression) => {
       if (!map) return;
