@@ -222,7 +222,9 @@ export const useLayerManager = (
       if (!map) return;
 
       sourceIds.forEach((sourceId) => {
-        map.removeSource(sourceId);
+        if (map.getSource(sourceId)) {
+          map.removeSource(sourceId);
+        }
       });
     },
     addLayers: (layers: mapboxgl.Layer[]) => {
@@ -236,7 +238,9 @@ export const useLayerManager = (
       if (!map) return;
 
       layerIds.forEach((layerId) => {
-        map.removeLayer(layerId);
+        if (map.getLayer(layerId)) {
+          map.removeLayer(layerId);
+        }
       });
     }
   };
