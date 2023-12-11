@@ -111,5 +111,33 @@ export var useLayerManager = function (map, sources, layers) {
                 id: featureId,
             }, state);
         },
+        addSources: function (sources) {
+            if (!map)
+                return;
+            sources.forEach(function (source) {
+                map.addSource(source.id, source.source);
+            });
+        },
+        removeSources: function (sourceIds) {
+            if (!map)
+                return;
+            sourceIds.forEach(function (sourceId) {
+                map.removeSource(sourceId);
+            });
+        },
+        addLayers: function (layers) {
+            if (!map)
+                return;
+            layers.forEach(function (layer) {
+                map.addLayer(layer);
+            });
+        },
+        removeLayers: function (layerIds) {
+            if (!map)
+                return;
+            layerIds.forEach(function (layerId) {
+                map.removeLayer(layerId);
+            });
+        }
     };
 };

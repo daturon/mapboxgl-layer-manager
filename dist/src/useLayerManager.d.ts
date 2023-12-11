@@ -1,5 +1,12 @@
 import mapboxgl, { AnyLayout, AnyPaint } from "mapbox-gl";
 export interface LayerManager {
+    addSources: (sources: {
+        id: string;
+        source: mapboxgl.AnySourceData;
+    }[]) => void;
+    removeSources: (sourceIds: string[]) => void;
+    addLayers: (layers: mapboxgl.Layer[]) => void;
+    removeLayers: (layerIds: string[]) => void;
     getCustomLayerIds: () => string[];
     getCustomSourceIds: () => string[];
     renderOrderedLayers: (layerIds: string[], config?: Record<string, {

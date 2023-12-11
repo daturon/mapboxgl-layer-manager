@@ -1,6 +1,10 @@
 import mapboxgl, { AnyLayer, AnyLayout, AnyPaint } from "mapbox-gl";
 
 export interface LayerManager {
+  addSources: (sources: { id: string; source: mapboxgl.AnySourceData }[]) => void;
+  removeSources: (sourceIds: string[]) => void;
+  addLayers: (layers: mapboxgl.Layer[]) => void;
+  removeLayers: (layerIds: string[]) => void;
   getCustomLayerIds: () => string[];
   getCustomSourceIds: () => string[];
   renderOrderedLayers: (
@@ -207,5 +211,33 @@ export const useLayerManager = (
         state
       );
     },
+    addSources: (sources: { id: string; source: mapboxgl.AnySourceData }[]) => {
+      if (!map) return;
+
+      sources.forEach((source) => {
+        map.addSource(source.id, source.source);
+      });
+    },
+    removeSources: (sourceIds: string[]) => {
+      if (!map) return;
+
+      sourceIds.forEach((sourceId) => {
+        map.removeSource(sourceId);
+      });
+    },
+    addLayers: (layers: mapboxgl.Layer[]) => {
+      if (!map) return;
+
+      layers.forEach((layer) => {
+        map.addLayer(layer as AnyLayer);
+      });
+    },
+    removeLayers: (layerIds: string[]) => {
+      if (!map) return;
+
+      layerIds.forEach((layerId) => {
+        map.removeLayer(layerId);
+      });
+    }
   };
 };
