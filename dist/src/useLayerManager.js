@@ -122,7 +122,9 @@ export var useLayerManager = function (map, sources, layers) {
             if (!map)
                 return;
             sourceIds.forEach(function (sourceId) {
-                map.removeSource(sourceId);
+                if (map.getSource(sourceId)) {
+                    map.removeSource(sourceId);
+                }
             });
         },
         addLayers: function (layers) {
@@ -136,7 +138,9 @@ export var useLayerManager = function (map, sources, layers) {
             if (!map)
                 return;
             layerIds.forEach(function (layerId) {
-                map.removeLayer(layerId);
+                if (map.getLayer(layerId)) {
+                    map.removeLayer(layerId);
+                }
             });
         }
     };
