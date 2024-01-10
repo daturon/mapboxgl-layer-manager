@@ -11,9 +11,11 @@ var extendLayerWithConfig = function (layer, config) {
     return layer;
 };
 export var useLayerManager = function (map, sources, layers) {
+    var customLayerIds = new Set();
+    var customSourcesIds = new Set();
     return {
-        getCustomLayerIds: function () { return layers.map(function (layer) { return layer.id; }); },
-        getCustomSourceIds: function () { return sources.map(function (source) { return source.id; }); },
+        getCustomLayerIds: function () { return Array.from(customLayerIds); },
+        getCustomSourceIds: function () { return Array.from(customSourcesIds); },
         renderOrderedLayers: function (layerIds, layerConfigs, beforeLayerId) {
             if (!map)
                 return;
@@ -116,6 +118,7 @@ export var useLayerManager = function (map, sources, layers) {
                 return;
             sources.forEach(function (source) {
                 map.addSource(source.id, source.source);
+                customSourcesIds.add(source.id);
             });
         },
         removeSources: function (sourceIds) {
@@ -124,14 +127,16 @@ export var useLayerManager = function (map, sources, layers) {
             sourceIds.forEach(function (sourceId) {
                 if (map.getSource(sourceId)) {
                     map.removeSource(sourceId);
+                    customSourcesIds.delete(sourceId);
                 }
             });
         },
-        addLayers: function (layers) {
+        addLayers: function (layers, beforeLayerId) {
             if (!map)
                 return;
             layers.forEach(function (layer) {
-                map.addLayer(layer);
+                map.addLayer(layer, beforeLayerId);
+                customLayerIds.add(layer.id);
             });
         },
         removeLayers: function (layerIds) {
@@ -140,6 +145,7 @@ export var useLayerManager = function (map, sources, layers) {
             layerIds.forEach(function (layerId) {
                 if (map.getLayer(layerId)) {
                     map.removeLayer(layerId);
+                    customLayerIds.delete(layerId);
                 }
             });
         }

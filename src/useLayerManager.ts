@@ -65,9 +65,12 @@ export const useLayerManager = (
   sources: { id: string; source: mapboxgl.AnySourceData }[],
   layers: mapboxgl.Layer[]
 ): LayerManager => {
+  const customLayerIds = new Set<string>();
+  const customSourcesIds = new Set<string>();
+
   return {
-    getCustomLayerIds: () => layers.map((layer) => layer.id),
-    getCustomSourceIds: () => sources.map((source) => source.id),
+    getCustomLayerIds: () => Array.from(customLayerIds),
+    getCustomSourceIds: () => Array.from(customSourcesIds),
     renderOrderedLayers: (
       layerIds: string[],
       layerConfigs?: Record<
@@ -216,6 +219,7 @@ export const useLayerManager = (
 
       sources.forEach((source) => {
         map.addSource(source.id, source.source);
+        customSourcesIds.add(source.id);
       });
     },
     removeSources: (sourceIds: string[]) => {
@@ -224,14 +228,16 @@ export const useLayerManager = (
       sourceIds.forEach((sourceId) => {
         if (map.getSource(sourceId)) {
           map.removeSource(sourceId);
+          customSourcesIds.delete(sourceId);
         }
       });
     },
-    addLayers: (layers: mapboxgl.Layer[]) => {
+    addLayers: (layers: mapboxgl.Layer[], beforeLayerId?: string) => {
       if (!map) return;
 
       layers.forEach((layer) => {
-        map.addLayer(layer as AnyLayer);
+        map.addLayer(layer as AnyLayer, beforeLayerId);
+        customLayerIds.add(layer.id);
       });
     },
     removeLayers: (layerIds: string[]) => {
@@ -240,6 +246,7 @@ export const useLayerManager = (
       layerIds.forEach((layerId) => {
         if (map.getLayer(layerId)) {
           map.removeLayer(layerId);
+          customLayerIds.delete(layerId);
         }
       });
     }
