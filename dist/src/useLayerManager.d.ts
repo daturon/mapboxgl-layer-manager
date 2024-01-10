@@ -7,8 +7,8 @@ export interface LayerManager {
     removeSources: (sourceIds: string[]) => void;
     addLayers: (layers: mapboxgl.Layer[]) => void;
     removeLayers: (layerIds: string[]) => void;
-    getCustomLayerIds: () => string[];
-    getCustomSourceIds: () => string[];
+    getActiveCustomLayerIds: () => string[];
+    getActiveCustomSourceIds: () => string[];
     renderOrderedLayers: (layerIds: string[], config?: Record<string, {
         filter: any[] | undefined;
         layout: AnyLayout | undefined;

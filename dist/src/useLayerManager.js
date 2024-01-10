@@ -14,8 +14,8 @@ export var useLayerManager = function (map, sources, layers) {
     var customLayerIds = new Set();
     var customSourcesIds = new Set();
     return {
-        getCustomLayerIds: function () { return Array.from(customLayerIds); },
-        getCustomSourceIds: function () { return Array.from(customSourcesIds); },
+        getActiveCustomLayerIds: function () { return Array.from(customLayerIds); },
+        getActiveCustomSourceIds: function () { return Array.from(customSourcesIds); },
         renderOrderedLayers: function (layerIds, layerConfigs, beforeLayerId) {
             if (!map)
                 return;
@@ -33,6 +33,7 @@ export var useLayerManager = function (map, sources, layers) {
                     var source = sources.find(function (source) { return source.id === sourceId; });
                     if (source === null || source === void 0 ? void 0 : source.source) {
                         map.addSource(source.id, source.source);
+                        customSourcesIds.add(source.id);
                     }
                 }
             });
@@ -42,6 +43,7 @@ export var useLayerManager = function (map, sources, layers) {
                 if (layerIds.indexOf(layer.id) === -1 &&
                     layers.find(function (l) { return layer.id === l.id; })) {
                     map.removeLayer(layer.id);
+                    customLayerIds.delete(layer.id);
                 }
             });
             // Remove unused sources
@@ -50,6 +52,7 @@ export var useLayerManager = function (map, sources, layers) {
                 if (!requiredSourceIds.includes(sourceId) &&
                     sources.find(function (s) { return sourceId === s.id; })) {
                     map.removeSource(sourceId);
+                    customSourcesIds.delete(sourceId);
                 }
             });
             // Remove the rest of the layers
@@ -57,6 +60,7 @@ export var useLayerManager = function (map, sources, layers) {
                 var layer = map.getLayer(layerId);
                 if (layer && layerIds.indexOf(layerId) !== -1) {
                     map.removeLayer(layerId);
+                    customLayerIds.delete(layerId);
                 }
             });
             // Add new layers
@@ -67,6 +71,7 @@ export var useLayerManager = function (map, sources, layers) {
                         extendLayerWithConfig(newLayer, layerConfigs[layerId]);
                     }
                     map.addLayer(newLayer, beforeLayerId);
+                    customLayerIds.add(layerId);
                 }
             });
             // Move layers to the right order

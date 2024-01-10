@@ -5,8 +5,8 @@ export interface LayerManager {
   removeSources: (sourceIds: string[]) => void;
   addLayers: (layers: mapboxgl.Layer[]) => void;
   removeLayers: (layerIds: string[]) => void;
-  getCustomLayerIds: () => string[];
-  getCustomSourceIds: () => string[];
+  getActiveCustomLayerIds: () => string[];
+  getActiveCustomSourceIds: () => string[];
   renderOrderedLayers: (
     layerIds: string[],
     config?: Record<
@@ -69,8 +69,8 @@ export const useLayerManager = (
   const customSourcesIds = new Set<string>();
 
   return {
-    getCustomLayerIds: () => Array.from(customLayerIds),
-    getCustomSourceIds: () => Array.from(customSourcesIds),
+    getActiveCustomLayerIds: () => Array.from(customLayerIds),
+    getActiveCustomSourceIds: () => Array.from(customSourcesIds),
     renderOrderedLayers: (
       layerIds: string[],
       layerConfigs?: Record<
@@ -103,6 +103,7 @@ export const useLayerManager = (
 
           if (source?.source) {
             map.addSource(source.id, source.source);
+            customSourcesIds.add(source.id);
           }
         }
       });
@@ -115,6 +116,7 @@ export const useLayerManager = (
           layers.find((l) => layer.id === l.id)
         ) {
           map.removeLayer(layer.id);
+          customLayerIds.delete(layer.id);
         }
       });
 
@@ -126,6 +128,7 @@ export const useLayerManager = (
           sources.find((s) => sourceId === s.id)
         ) {
           map.removeSource(sourceId);
+          customSourcesIds.delete(sourceId);
         }
       });
 
@@ -135,6 +138,7 @@ export const useLayerManager = (
 
         if (layer && layerIds.indexOf(layerId) !== -1) {
           map.removeLayer(layerId);
+          customLayerIds.delete(layerId);
         }
       });
 
@@ -148,6 +152,7 @@ export const useLayerManager = (
           }
 
           map.addLayer(newLayer as AnyLayer, beforeLayerId);
+          customLayerIds.add(layerId);
         }
       });
 
