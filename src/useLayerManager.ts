@@ -219,12 +219,13 @@ export const useLayerManager = (
         state
       );
     },
-    addSources: (sources: { id: string; source: mapboxgl.AnySourceData }[]) => {
+    addSources: (newSources: { id: string; source: mapboxgl.AnySourceData }[]) => {
       if (!map) return;
 
-      sources.forEach((source) => {
+      newSources.forEach((source) => {
         map.addSource(source.id, source.source);
         customSourcesIds.add(source.id);
+        sources.push(source);
       });
     },
     removeSources: (sourceIds: string[]) => {
@@ -234,15 +235,17 @@ export const useLayerManager = (
         if (map.getSource(sourceId)) {
           map.removeSource(sourceId);
           customSourcesIds.delete(sourceId);
+          sources = sources.filter((source) => source.id !== sourceId);
         }
       });
     },
-    addLayers: (layers: mapboxgl.Layer[], beforeLayerId?: string) => {
+    addLayers: (newLayers: mapboxgl.Layer[], beforeLayerId?: string) => {
       if (!map) return;
 
-      layers.forEach((layer) => {
+      newLayers.forEach((layer) => {
         map.addLayer(layer as AnyLayer, beforeLayerId);
         customLayerIds.add(layer.id);
+        layers.push(layer);
       });
     },
     removeLayers: (layerIds: string[]) => {
@@ -252,6 +255,7 @@ export const useLayerManager = (
         if (map.getLayer(layerId)) {
           map.removeLayer(layerId);
           customLayerIds.delete(layerId);
+          layers = layers.filter((layer) => layer.id !== layerId);
         }
       });
     }
