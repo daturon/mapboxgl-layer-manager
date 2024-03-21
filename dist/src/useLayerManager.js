@@ -1,6 +1,15 @@
+var __spreadArray = (this && this.__spreadArray) || function (to, from, pack) {
+    if (pack || arguments.length === 2) for (var i = 0, l = from.length, ar; i < l; i++) {
+        if (ar || !(i in from)) {
+            if (!ar) ar = Array.prototype.slice.call(from, 0, i);
+            ar[i] = from[i];
+        }
+    }
+    return to.concat(ar || Array.prototype.slice.call(from));
+};
 var extendLayerWithConfig = function (layer, config) {
     if (config.filter) {
-        layer.filter = config.filter;
+        layer.filter = __spreadArray(["all"], config.filter, true);
     }
     if (config.layout) {
         layer.layout = config.layout;
@@ -13,9 +22,11 @@ var extendLayerWithConfig = function (layer, config) {
 export var useLayerManager = function (map, sources, layers) {
     var customLayerIds = new Set();
     var customSourcesIds = new Set();
+    var layerFilters = new Map();
     return {
         getActiveCustomLayerIds: function () { return Array.from(customLayerIds); },
         getActiveCustomSourceIds: function () { return Array.from(customSourcesIds); },
+        getLayersFilters: function () { return layerFilters; },
         renderOrderedLayers: function (layerIds, layerConfigs, beforeLayerId) {
             if (!map)
                 return;
@@ -68,6 +79,12 @@ export var useLayerManager = function (map, sources, layers) {
                 var newLayer = layers.find(function (l) { return l.id == layerId; });
                 if (newLayer) {
                     if (layerConfigs === null || layerConfigs === void 0 ? void 0 : layerConfigs[layerId]) {
+                        if (!layerFilters.has(layerId)) {
+                            layerFilters.set(layerId, {});
+                        }
+                        if (layerConfigs[layerId].filter) {
+                            layerFilters.get(layerId).default = layerConfigs[layerId].filter;
+                        }
                         extendLayerWithConfig(newLayer, layerConfigs[layerId]);
                     }
                     map.addLayer(newLayer, beforeLayerId);
@@ -83,12 +100,19 @@ export var useLayerManager = function (map, sources, layers) {
                 }
             });
         },
-        updateLayerFilter: function (layerId, filter) {
+        updateLayerFilter: function (layerId, filter, filterName) {
+            if (filterName === void 0) { filterName = "default"; }
             if (!map)
                 return;
             var layer = map.getLayer(layerId);
             if (layer) {
-                map.setFilter(layerId, filter);
+                if (!layerFilters.has(layerId)) {
+                    layerFilters.set(layerId, {});
+                }
+                layerFilters.get(layerId)[filterName] = filter;
+                map.setFilter(layerId, __spreadArray([
+                    "all"
+                ], Object.values(layerFilters.get(layerId)), true));
             }
         },
         updateLayerLayout: function (layerId, name, value, // eslint-disable-line @typescript-eslint/no-explicit-any
@@ -118,12 +142,13 @@ export var useLayerManager = function (map, sources, layers) {
                 id: featureId,
             }, state);
         },
-        addSources: function (sources) {
+        addSources: function (newSources) {
             if (!map)
                 return;
-            sources.forEach(function (source) {
+            newSources.forEach(function (source) {
                 map.addSource(source.id, source.source);
                 customSourcesIds.add(source.id);
+                sources.push(source);
             });
         },
         removeSources: function (sourceIds) {
@@ -133,15 +158,17 @@ export var useLayerManager = function (map, sources, layers) {
                 if (map.getSource(sourceId)) {
                     map.removeSource(sourceId);
                     customSourcesIds.delete(sourceId);
+                    sources = sources.filter(function (source) { return source.id !== sourceId; });
                 }
             });
         },
-        addLayers: function (layers, beforeLayerId) {
+        addLayers: function (newLayers, beforeLayerId) {
             if (!map)
                 return;
-            layers.forEach(function (layer) {
+            newLayers.forEach(function (layer) {
                 map.addLayer(layer, beforeLayerId);
                 customLayerIds.add(layer.id);
+                layers.push(layer);
             });
         },
         removeLayers: function (layerIds) {
@@ -151,8 +178,9 @@ export var useLayerManager = function (map, sources, layers) {
                 if (map.getLayer(layerId)) {
                     map.removeLayer(layerId);
                     customLayerIds.delete(layerId);
+                    layers = layers.filter(function (layer) { return layer.id !== layerId; });
                 }
             });
-        }
+        },
     };
 };

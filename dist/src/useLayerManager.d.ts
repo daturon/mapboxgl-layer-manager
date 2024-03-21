@@ -9,12 +9,13 @@ export interface LayerManager {
     removeLayers: (layerIds: string[]) => void;
     getActiveCustomLayerIds: () => string[];
     getActiveCustomSourceIds: () => string[];
+    getLayersFilters: () => Map<string, Record<string, mapboxgl.Expression>>;
     renderOrderedLayers: (layerIds: string[], config?: Record<string, {
-        filter: any[] | undefined;
+        filter: mapboxgl.Expression | undefined;
         layout: AnyLayout | undefined;
         paint: AnyPaint | undefined;
     }>, beforeLayerId?: string) => void;
-    updateLayerFilter: (layerId: string, filter: mapboxgl.Expression) => void;
+    updateLayerFilter: (layerId: string, filter: mapboxgl.Expression, filterName?: string) => void;
     updateLayerLayout: (layerId: string, name: string, value: any, // eslint-disable-line @typescript-eslint/no-explicit-any
     options?: mapboxgl.FilterOptions | undefined) => void;
     updateLayerPaint: (layerId: string, name: string, value: any, // eslint-disable-line @typescript-eslint/no-explicit-any
