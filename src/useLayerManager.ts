@@ -1,4 +1,4 @@
-import mapboxgl, { AnyLayer, AnyLayout, AnyPaint } from "mapbox-gl";
+import mapboxgl, { AnyLayer, AnyLayout, AnyPaint, Expression } from "mapbox-gl";
 
 export interface LayerManager {
   addSources: (
@@ -15,7 +15,7 @@ export interface LayerManager {
     config?: Record<
       string,
       {
-        filter: mapboxgl.Expression | undefined; // eslint-disable-line @typescript-eslint/no-explicit-any
+        filter: Expression | undefined; // eslint-disable-line @typescript-eslint/no-explicit-any
         layout: AnyLayout | undefined;
         paint: AnyPaint | undefined;
       }
@@ -49,7 +49,7 @@ export interface LayerManager {
 const extendLayerWithConfig = (
   layer: mapboxgl.Layer,
   config: {
-    filter: any[] | undefined; // eslint-disable-line @typescript-eslint/no-explicit-any
+    filter: Expression | undefined; // eslint-disable-line @typescript-eslint/no-explicit-any
     layout: AnyLayout | undefined;
     paint: AnyPaint | undefined;
   }

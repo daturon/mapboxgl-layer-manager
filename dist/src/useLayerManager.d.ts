@@ -1,4 +1,4 @@
-import mapboxgl, { AnyLayout, AnyPaint } from "mapbox-gl";
+import mapboxgl, { AnyLayout, AnyPaint, Expression } from "mapbox-gl";
 export interface LayerManager {
     addSources: (sources: {
         id: string;
@@ -11,7 +11,7 @@ export interface LayerManager {
     getActiveCustomSourceIds: () => string[];
     getLayersFilters: () => Map<string, Record<string, mapboxgl.Expression>>;
     renderOrderedLayers: (layerIds: string[], config?: Record<string, {
-        filter: mapboxgl.Expression | undefined;
+        filter: Expression | undefined;
         layout: AnyLayout | undefined;
         paint: AnyPaint | undefined;
     }>, beforeLayerId?: string) => void;
