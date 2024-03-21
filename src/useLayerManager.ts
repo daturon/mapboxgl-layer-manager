@@ -1,25 +1,32 @@
 import mapboxgl, { AnyLayer, AnyLayout, AnyPaint } from "mapbox-gl";
 
 export interface LayerManager {
-  addSources: (sources: { id: string; source: mapboxgl.AnySourceData }[]) => void;
+  addSources: (
+    sources: { id: string; source: mapboxgl.AnySourceData }[]
+  ) => void;
   removeSources: (sourceIds: string[]) => void;
   addLayers: (layers: mapboxgl.Layer[]) => void;
   removeLayers: (layerIds: string[]) => void;
   getActiveCustomLayerIds: () => string[];
   getActiveCustomSourceIds: () => string[];
+  getLayersFilters: () => Map<string, Record<string, mapboxgl.Expression>>;
   renderOrderedLayers: (
     layerIds: string[],
     config?: Record<
       string,
       {
-        filter: any[] | undefined; // eslint-disable-line @typescript-eslint/no-explicit-any
+        filter: mapboxgl.Expression | undefined; // eslint-disable-line @typescript-eslint/no-explicit-any
         layout: AnyLayout | undefined;
         paint: AnyPaint | undefined;
       }
     >,
     beforeLayerId?: string
   ) => void;
-  updateLayerFilter: (layerId: string, filter: mapboxgl.Expression) => void;
+  updateLayerFilter: (
+    layerId: string,
+    filter: mapboxgl.Expression,
+    filterName?: string
+  ) => void;
   updateLayerLayout: (
     layerId: string,
     name: string,
@@ -48,7 +55,7 @@ const extendLayerWithConfig = (
   }
 ): mapboxgl.Layer => {
   if (config.filter) {
-    layer.filter = config.filter;
+    layer.filter = ["all", ...config.filter];
   }
   if (config.layout) {
     layer.layout = config.layout;
@@ -67,16 +74,18 @@ export const useLayerManager = (
 ): LayerManager => {
   const customLayerIds = new Set<string>();
   const customSourcesIds = new Set<string>();
+  const layerFilters = new Map<string, Record<string, mapboxgl.Expression>>();
 
   return {
     getActiveCustomLayerIds: () => Array.from(customLayerIds),
     getActiveCustomSourceIds: () => Array.from(customSourcesIds),
+    getLayersFilters: () => layerFilters,
     renderOrderedLayers: (
       layerIds: string[],
       layerConfigs?: Record<
         string,
         {
-          filter: any[] | undefined; // eslint-disable-line @typescript-eslint/no-explicit-any
+          filter: mapboxgl.Expression | undefined; // eslint-disable-line @typescript-eslint/no-explicit-any
           layout: AnyLayout | undefined;
           paint: AnyPaint | undefined;
         }
@@ -148,6 +157,14 @@ export const useLayerManager = (
 
         if (newLayer) {
           if (layerConfigs?.[layerId]) {
+            if (!layerFilters.has(layerId)) {
+              layerFilters.set(layerId, {});
+            }
+
+            if (layerConfigs[layerId].filter) {
+              layerFilters.get(layerId)!.default = layerConfigs[layerId].filter;
+            }
+
             extendLayerWithConfig(newLayer, layerConfigs[layerId]);
           }
 
@@ -167,13 +184,26 @@ export const useLayerManager = (
         }
       });
     },
-    updateLayerFilter: (layerId: string, filter: mapboxgl.Expression) => {
+    updateLayerFilter: (
+      layerId: string,
+      filter: mapboxgl.Expression,
+      filterName: string = "default"
+    ) => {
       if (!map) return;
 
       const layer = map.getLayer(layerId);
 
       if (layer) {
-        map.setFilter(layerId, filter);
+        if (!layerFilters.has(layerId)) {
+          layerFilters.set(layerId, {});
+        }
+
+        layerFilters.get(layerId)![filterName] = filter;
+
+        map.setFilter(layerId, [
+          "all",
+          ...Object.values(layerFilters.get(layerId)!),
+        ]);
       }
     },
     updateLayerLayout: (
@@ -219,7 +249,9 @@ export const useLayerManager = (
         state
       );
     },
-    addSources: (newSources: { id: string; source: mapboxgl.AnySourceData }[]) => {
+    addSources: (
+      newSources: { id: string; source: mapboxgl.AnySourceData }[]
+    ) => {
       if (!map) return;
 
       newSources.forEach((source) => {
@@ -258,6 +290,6 @@ export const useLayerManager = (
           layers = layers.filter((layer) => layer.id !== layerId);
         }
       });
-    }
+    },
   };
 };
