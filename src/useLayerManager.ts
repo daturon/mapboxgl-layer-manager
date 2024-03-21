@@ -55,7 +55,7 @@ const extendLayerWithConfig = (
   }
 ): mapboxgl.Layer => {
   if (config.filter) {
-    layer.filter = ["all", ...config.filter];
+    layer.filter = ["all", config.filter];
   }
   if (config.layout) {
     layer.layout = config.layout;

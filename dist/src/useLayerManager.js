@@ -9,7 +9,7 @@ var __spreadArray = (this && this.__spreadArray) || function (to, from, pack) {
 };
 var extendLayerWithConfig = function (layer, config) {
     if (config.filter) {
-        layer.filter = __spreadArray(["all"], config.filter, true);
+        layer.filter = ["all", config.filter];
     }
     if (config.layout) {
         layer.layout = config.layout;
