@@ -27,6 +27,7 @@ export var useLayerManager = function (map, sources, layers) {
         getActiveCustomLayerIds: function () { return Array.from(customLayerIds); },
         getActiveCustomSourceIds: function () { return Array.from(customSourcesIds); },
         getLayersFilters: function () { return layerFilters; },
+        getMapInstance: function () { return map; },
         renderOrderedLayers: function (layerIds, layerConfigs, beforeLayerId) {
             if (!map)
                 return;

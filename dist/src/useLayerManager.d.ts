@@ -10,6 +10,7 @@ export interface LayerManager {
     getActiveCustomLayerIds: () => string[];
     getActiveCustomSourceIds: () => string[];
     getLayersFilters: () => Map<string, Record<string, mapboxgl.Expression>>;
+    getMapInstance: () => mapboxgl.Map | null;
     renderOrderedLayers: (layerIds: string[], config?: Record<string, {
         filter: Expression | undefined;
         layout: AnyLayout | undefined;

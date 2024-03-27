@@ -10,6 +10,7 @@ export interface LayerManager {
   getActiveCustomLayerIds: () => string[];
   getActiveCustomSourceIds: () => string[];
   getLayersFilters: () => Map<string, Record<string, mapboxgl.Expression>>;
+  getMapInstance: () => mapboxgl.Map | null;
   renderOrderedLayers: (
     layerIds: string[],
     config?: Record<
@@ -80,6 +81,7 @@ export const useLayerManager = (
     getActiveCustomLayerIds: () => Array.from(customLayerIds),
     getActiveCustomSourceIds: () => Array.from(customSourcesIds),
     getLayersFilters: () => layerFilters,
+    getMapInstance: () => map,
     renderOrderedLayers: (
       layerIds: string[],
       layerConfigs?: Record<
