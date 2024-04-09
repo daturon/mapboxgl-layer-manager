@@ -22,7 +22,7 @@ export interface LayerManager {
       }
     >,
     beforeLayerId?: string
-  ) => void;
+  ) => Promise<void>;
   updateLayerFilter: (
     layerId: string,
     filter: mapboxgl.Expression,
@@ -82,7 +82,7 @@ export const useLayerManager = (
     getActiveCustomSourceIds: () => Array.from(customSourcesIds),
     getLayersFilters: () => layerFilters,
     getMapInstance: () => map,
-    renderOrderedLayers: (
+    renderOrderedLayers: async (
       layerIds: string[],
       layerConfigs?: Record<
         string,
@@ -96,95 +96,105 @@ export const useLayerManager = (
     ) => {
       if (!map) return;
 
-      const requiredSourceIds: string[] = [];
+      try {
+        const requiredSourceIds: string[] = [];
 
-      // Get the sources that are required
-      layerIds.forEach((layerId) => {
-        const layer = layers.find((layer) => layer.id === layerId);
+        // Get the sources that are required
+        layerIds.forEach((layerId) => {
+          const layer = layers.find((layer) => layer.id === layerId);
 
-        if (layer?.source) {
-          requiredSourceIds.push(layer.source as string);
-        }
-      });
-
-      // Get the sources that are not in the map
-      requiredSourceIds.forEach((sourceId) => {
-        if (!map.getSource(sourceId)) {
-          const source = sources.find((source) => source.id === sourceId);
-
-          if (source?.source) {
-            map.addSource(source.id, source.source);
-            customSourcesIds.add(source.id);
+          if (layer?.source) {
+            requiredSourceIds.push(layer.source as string);
           }
-        }
-      });
+        });
 
-      // Remove unused layers
-      const existingLayers = map.getStyle().layers;
-      existingLayers.forEach((layer) => {
-        if (
-          layerIds.indexOf(layer.id) === -1 &&
-          layers.find((l) => layer.id === l.id)
-        ) {
-          map.removeLayer(layer.id);
-          customLayerIds.delete(layer.id);
-        }
-      });
+        // Get the sources that are not in the map
+        requiredSourceIds.forEach((sourceId) => {
+          if (!map.getSource(sourceId)) {
+            const source = sources.find((source) => source.id === sourceId);
 
-      // Remove unused sources
-      const existingSources = map.getStyle().sources;
-      Object.keys(existingSources).forEach((sourceId) => {
-        if (
-          !requiredSourceIds.includes(sourceId) &&
-          sources.find((s) => sourceId === s.id)
-        ) {
-          map.removeSource(sourceId);
-          customSourcesIds.delete(sourceId);
-        }
-      });
+            if (source?.source) {
+              map.addSource(source.id, source.source);
+              customSourcesIds.add(source.id);
+            }
+          }
+        });
 
-      // Remove the rest of the layers
-      layerIds.forEach((layerId) => {
-        const layer = map.getLayer(layerId);
+        // Remove unused layers
+        const existingLayers = map.getStyle().layers;
+        existingLayers.forEach((layer) => {
+          if (
+            layerIds.indexOf(layer.id) === -1 &&
+            layers.find((l) => layer.id === l.id)
+          ) {
+            map.removeLayer(layer.id);
+            customLayerIds.delete(layer.id);
+          }
+        });
 
-        if (layer && layerIds.indexOf(layerId) !== -1) {
-          map.removeLayer(layerId);
-          customLayerIds.delete(layerId);
-        }
-      });
+        // Remove unused sources
+        const existingSources = map.getStyle().sources;
+        Object.keys(existingSources).forEach((sourceId) => {
+          if (
+            !requiredSourceIds.includes(sourceId) &&
+            sources.find((s) => sourceId === s.id)
+          ) {
+            map.removeSource(sourceId);
+            customSourcesIds.delete(sourceId);
+          }
+        });
 
-      // Add new layers
-      layerIds.forEach((layerId) => {
-        const newLayer = layers.find((l) => l.id == layerId);
+        // Remove the rest of the layers
+        layerIds.forEach((layerId) => {
+          const layer = map.getLayer(layerId);
 
-        if (newLayer) {
-          if (layerConfigs?.[layerId]) {
-            if (!layerFilters.has(layerId)) {
-              layerFilters.set(layerId, {});
+          if (layer && layerIds.indexOf(layerId) !== -1) {
+            map.removeLayer(layerId);
+            customLayerIds.delete(layerId);
+          }
+        });
+
+        // Add new layers
+        layerIds.forEach((layerId) => {
+          const newLayer = layers.find((l) => l.id == layerId);
+
+          if (newLayer) {
+            if (layerConfigs?.[layerId]) {
+              if (!layerFilters.has(layerId)) {
+                layerFilters.set(layerId, {});
+              }
+
+              if (layerConfigs[layerId].filter) {
+                layerFilters.get(layerId)!.default =
+                  layerConfigs[layerId].filter;
+              }
+
+              extendLayerWithConfig(newLayer, layerConfigs[layerId]);
             }
 
-            if (layerConfigs[layerId].filter) {
-              layerFilters.get(layerId)!.default = layerConfigs[layerId].filter;
-            }
-
-            extendLayerWithConfig(newLayer, layerConfigs[layerId]);
+            map.addLayer(newLayer as AnyLayer, beforeLayerId);
+            customLayerIds.add(layerId);
           }
+        });
 
-          map.addLayer(newLayer as AnyLayer, beforeLayerId);
-          customLayerIds.add(layerId);
-        }
-      });
+        // Move layers to the right order
+        layerIds = layerIds.slice().reverse();
 
-      // Move layers to the right order
-      layerIds = layerIds.slice().reverse();
+        layerIds.forEach((layerId, index) => {
+          const referenceLayerId =
+            index === 0 ? undefined : layerIds[index - 1];
 
-      layerIds.forEach((layerId, index) => {
-        const referenceLayerId = index === 0 ? undefined : layerIds[index - 1];
+          if (typeof referenceLayerId !== "undefined") {
+            map.moveLayer(layerId, referenceLayerId);
+          }
+        });
 
-        if (typeof referenceLayerId !== "undefined") {
-          map.moveLayer(layerId, referenceLayerId);
-        }
-      });
+        return new Promise((resolve) => {
+          map.once("render", resolve);
+        });
+      } catch (error) {
+        return Promise.reject(error);
+      }
     },
     updateLayerFilter: (
       layerId: string,
