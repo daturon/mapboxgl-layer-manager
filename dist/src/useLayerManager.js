@@ -163,6 +163,17 @@ export var useLayerManager = function (map, sources, layers) {
                 ], Object.values(layerFilters.get(layerId)), true));
             }
         },
+        removeLayerFilter: function (layerId, filterName) {
+            if (!map)
+                return;
+            var layer = map.getLayer(layerId);
+            if (layer && layerFilters.has(layerId)) {
+                delete layerFilters.get(layerId)[filterName];
+                map.setFilter(layerId, __spreadArray([
+                    "all"
+                ], Object.values(layerFilters.get(layerId)), true));
+            }
+        },
         updateLayerLayout: function (layerId, name, value, // eslint-disable-line @typescript-eslint/no-explicit-any
         options) {
             if (!map)

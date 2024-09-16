@@ -28,6 +28,7 @@ export interface LayerManager {
     filter: mapboxgl.Expression,
     filterName?: string
   ) => void;
+  removeLayerFilter: (layerId: string, filterName: string) => void;
   updateLayerLayout: (
     layerId: string,
     name: string,
@@ -211,6 +212,20 @@ export const useLayerManager = (
         }
 
         layerFilters.get(layerId)![filterName] = filter;
+
+        map.setFilter(layerId, [
+          "all",
+          ...Object.values(layerFilters.get(layerId)!),
+        ]);
+      }
+    },
+    removeLayerFilter: (layerId: string, filterName: string) => {
+      if (!map) return;
+
+      const layer = map.getLayer(layerId);
+
+      if (layer && layerFilters.has(layerId)) {
+        delete layerFilters.get(layerId)![filterName];
 
         map.setFilter(layerId, [
           "all",

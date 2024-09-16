@@ -17,6 +17,7 @@ export interface LayerManager {
         paint: AnyPaint | undefined;
     }>, beforeLayerId?: string) => Promise<void>;
     updateLayerFilter: (layerId: string, filter: mapboxgl.Expression, filterName?: string) => void;
+    removeLayerFilter: (layerId: string, filterName: string) => void;
     updateLayerLayout: (layerId: string, name: string, value: any, // eslint-disable-line @typescript-eslint/no-explicit-any
     options?: mapboxgl.FilterOptions | undefined) => void;
     updateLayerPaint: (layerId: string, name: string, value: any, // eslint-disable-line @typescript-eslint/no-explicit-any
