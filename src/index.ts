@@ -1,3 +1,3 @@
-import LayerManager from 'LayerManager';
+import LayerManager from './LayerManager';
 
 export default LayerManager;
