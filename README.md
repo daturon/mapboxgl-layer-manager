@@ -1,33 +1,137 @@
-The Layer Manager for Mapbox GL is a versatile and user-friendly tool designed to streamline the management of map layers within the Mapbox GL environment. This tool simplifies the process of modifying layer order and adjusting and fine-tuning each layer's settings on a map.
+# Mapbox GL Layer Manager
 
-**Key Features:**
+![npm version](https://img.shields.io/npm/v/@daturon/mapboxgl-layer-manager)
 
-Layer Ordering: One of the primary functions of the Layer Manager is to enable users to change the ordering of map layers easily. Whether you need to bring a specific layer to the foreground or send it to the background, this intuitive feature ensures that users can organize layers to meet their mapping needs by providing a new list of layer ordering.
+**The Layer Manager for Mapbox GL** is a powerful utility that simplifies the management of layers and sources in the **Mapbox GL** environment. This package allows easy **layer reordering, visibility toggling, opacity adjustments, and other modifications**, making it an essential tool for developers working with interactive maps.
 
-Settings Management: The Layer Manager is a comprehensive solution for handling all aspects of layer settings. Users can access and modify a wide range of properties for each layer, such as layout, paint options, and more.
+It supports dynamic management of multiple sources and layers, allowing developers to **dynamically change active sources, reorder layers efficiently, and automatically free unused resources** to optimize performance.
 
-## Quick start
+---
 
-```tsx
-import { useLayerManager } from '@daturon/mapboxgl-layer-manager';
+## 🚀 Features
 
-const layerManager = useLayerManager(map.current, sources, layers);
+- 🗺️ **Easy Layer and Source Management** – Add, remove, and update layers and sources effortlessly.
+- 🔄 **Dynamic Layer Reordering** – Change layer positions in real-time.
+- 🎨 **Customize Layer Styling** – Adjust **opacity, visibility, and colors** dynamically.
+- 🗃️ **Manage Multiple Sources** – Attach and detach different sources on the fly.
+- ⚡ **Automatic Resource Cleanup** – Unused sources and layers are removed automatically to improve efficiency.
+- 🔍 **Advanced Filtering System** – Filters have unique identifiers, making them easy to enable/disable dynamically.
 
-layerManager.renderOrderedLayers(['layer-id-1', 'layer-id-2'], {
-  'layer-id-2': { paint: { 'fill-color': 'green' } },
-});
-```
+---
 
-## Install
+## 📦 Installation
 
-npm:
+You can install the package via **npm** or **yarn**:
 
-```bash
+```sh
 npm install @daturon/mapboxgl-layer-manager
 ```
 
-yarn:
+or
 
-```bash
+```sh
 yarn add @daturon/mapboxgl-layer-manager
 ```
+
+---
+
+## 🛠️ Usage
+
+### **1️⃣ Import and Initialize**
+
+```ts
+import { LayerManager } from "@daturon/mapboxgl-layer-manager";
+
+const map = new mapboxgl.Map({
+  container: "map",
+  style: "mapbox://styles/mapbox/streets-v11",
+  center: [-74.006, 40.7128],
+  zoom: 10,
+});
+
+const manager = new LayerManager(map);
+```
+
+### **2️⃣ Add a Layer with a Source**
+
+```ts
+manager.addSource("my-source", {
+  type: "geojson",
+  data: myGeoJSONData
+});
+
+manager.addLayer({
+  id: "my-layer",
+  type: "circle",
+  source: "my-source",
+  paint: { "circle-radius": 5, "circle-color": "#ff0000" },
+});
+```
+
+### **3️⃣ Modify Layer Properties**
+
+```ts
+manager.setLayerOpacity("my-layer", 0.5);
+manager.toggleLayerVisibility("my-layer");
+```
+
+### **4️⃣ Reorder Layers**
+
+```ts
+manager.reorderLayer("my-layer", "another-layer");
+```
+
+### **5️⃣ Manage Filters Dynamically**
+
+```ts
+manager.setFilter("my-layer", "my-filter", ["==", "type", "park"]);
+manager.removeFilter("my-layer", "my-filter");
+```
+
+### **6️⃣ Remove a Layer and Free Resources**
+
+```ts
+manager.removeLayer("my-layer");
+manager.removeSource("my-source");
+```
+
+---
+
+## 🏗️ Contributing
+
+We welcome contributions! If you want to improve this package:
+
+1. **Fork** the repository.
+2. **Clone** your fork:
+   ```sh
+   git clone https://github.com/daturon/mapboxgl-layer-manager.git
+   ```
+3. **Install dependencies**:
+   ```sh
+   yarn install
+   ```
+4. **Create a feature branch**:
+   ```sh
+   git checkout -b feature-name
+   ```
+5. **Commit changes**:
+   ```sh
+   git commit -m "Add new feature"
+   ```
+6. **Push and open a pull request**.
+
+---
+
+## 📜 License
+
+This project is licensed under the **MIT License**.
+
+---
+
+## 🔗 Links
+
+- **GitHub Repository**: [Mapbox GL Layer Manager](https://github.com/daturon/mapboxgl-layer-manager)
+- **Report Issues**: [GitHub Issues](https://github.com/daturon/mapboxgl-layer-manager/issues)
+- **NPM Package**: [npmjs.com/@daturon/mapboxgl-layer-manager](https://www.npmjs.com/package/@daturon/mapboxgl-layer-manager)
+
+🚀 Happy Mapping! 🌍
