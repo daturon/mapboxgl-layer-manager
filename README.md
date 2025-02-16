@@ -40,11 +40,11 @@ yarn add @daturon/mapboxgl-layer-manager
 ### **1️⃣ Import and Initialize**
 
 ```ts
-import { LayerManager } from "@daturon/mapboxgl-layer-manager";
+import { LayerManager } from '@daturon/mapboxgl-layer-manager';
 
 const map = new mapboxgl.Map({
-  container: "map",
-  style: "mapbox://styles/mapbox/streets-v11",
+  container: 'map',
+  style: 'mapbox://styles/mapbox/streets-v11',
   center: [-74.006, 40.7128],
   zoom: 10,
 });
@@ -55,44 +55,46 @@ const manager = new LayerManager(map);
 ### **2️⃣ Add a Layer with a Source**
 
 ```ts
-manager.addSource("my-source", {
-  type: "geojson",
-  data: myGeoJSONData
+manager.addSource('my-source', {
+  type: 'geojson',
+  data: myGeoJSONData,
 });
 
 manager.addLayer({
-  id: "my-layer",
-  type: "circle",
-  source: "my-source",
-  paint: { "circle-radius": 5, "circle-color": "#ff0000" },
+  id: 'my-layer',
+  type: 'circle',
+  source: 'my-source',
+  paint: { 'circle-radius': 5, 'circle-color': '#ff0000' },
 });
+
+manager.renderOrderedLayers(['my-layer']); // When we have multiple layers, we can use the renderOrderedLayers method to render them in the correct order. Call this method again when you need a new layer set to be rendered.
 ```
 
 ### **3️⃣ Modify Layer Properties**
 
 ```ts
-manager.setLayerOpacity("my-layer", 0.5);
-manager.toggleLayerVisibility("my-layer");
+manager.setLayerOpacity('my-layer', 0.5);
+manager.toggleLayerVisibility('my-layer');
 ```
 
 ### **4️⃣ Reorder Layers**
 
 ```ts
-manager.reorderLayer("my-layer", "another-layer");
+manager.reorderLayer('my-layer', 'another-layer');
 ```
 
 ### **5️⃣ Manage Filters Dynamically**
 
 ```ts
-manager.setFilter("my-layer", "my-filter", ["==", "type", "park"]);
-manager.removeFilter("my-layer", "my-filter");
+manager.setFilter('my-layer', 'my-filter', ['==', 'type', 'park']);
+manager.removeFilter('my-layer', 'my-filter');
 ```
 
 ### **6️⃣ Remove a Layer and Free Resources**
 
 ```ts
-manager.removeLayer("my-layer");
-manager.removeSource("my-source");
+manager.removeLayer('my-layer');
+manager.removeSource('my-source');
 ```
 
 ---
