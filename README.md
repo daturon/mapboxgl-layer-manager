@@ -13,12 +13,9 @@ import { useLayerManager } from '@daturon/mapboxgl-layer-manager';
 
 const layerManager = useLayerManager(map.current, sources, layers);
 
-layerManager.renderOrderedLayers([
-  'layer-id-1',
-  'layer-id-2',
-],
-{ "layer-id-2": { paint: { "fill-color": "green" } } });
-
+layerManager.renderOrderedLayers(['layer-id-1', 'layer-id-2'], {
+  'layer-id-2': { paint: { 'fill-color': 'green' } },
+});
 ```
 
 ## Install
