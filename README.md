@@ -8,18 +8,18 @@ It supports dynamic management of multiple sources and layers, allowing develope
 
 ---
 
-## 🚀 Features
+## Features
 
-- 🗺️ **Easy Layer and Source Management** – Add, remove, and update layers and sources effortlessly.
-- 🔄 **Dynamic Layer Reordering** – Change layer positions in real-time.
-- 🎨 **Customize Layer Styling** – Adjust **opacity, visibility, and colors** dynamically.
-- 🗃️ **Manage Multiple Sources** – Attach and detach different sources on the fly.
-- ⚡ **Automatic Resource Cleanup** – Unused sources and layers are removed automatically to improve efficiency.
-- 🔍 **Advanced Filtering System** – Filters have unique identifiers, making them easy to enable/disable dynamically.
+- **Easy Layer and Source Management** – Add, remove, and update layers and sources effortlessly.
+- **Dynamic Layer Reordering** – Change layer positions in real-time.
+- **Customize Layer Styling** – Adjust **opacity, visibility, and colors** dynamically.
+- **Manage Multiple Sources** – Attach and detach different sources on the fly.
+- **Automatic Resource Cleanup** – Unused sources and layers are removed automatically to improve efficiency.
+- **Advanced Filtering System** – Filters have unique identifiers, making them easy to enable/disable dynamically.
 
 ---
 
-## 📦 Installation
+## Installation
 
 You can install the package via **npm** or **yarn**:
 
@@ -35,7 +35,7 @@ yarn add @daturon/mapboxgl-layer-manager
 
 ---
 
-## 🛠️ Usage
+## Usage
 
 ### **1️⃣ Import and Initialize**
 
@@ -99,7 +99,7 @@ manager.removeSource('my-source');
 
 ---
 
-## 🏗️ Contributing
+## Contributing
 
 We welcome contributions! If you want to improve this package:
 
@@ -124,16 +124,16 @@ We welcome contributions! If you want to improve this package:
 
 ---
 
-## 📜 License
+## License
 
 This project is licensed under the **MIT License**.
 
 ---
 
-## 🔗 Links
+## Links
 
 - **GitHub Repository**: [Mapbox GL Layer Manager](https://github.com/daturon/mapboxgl-layer-manager)
 - **Report Issues**: [GitHub Issues](https://github.com/daturon/mapboxgl-layer-manager/issues)
 - **NPM Package**: [npmjs.com/@daturon/mapboxgl-layer-manager](https://www.npmjs.com/package/@daturon/mapboxgl-layer-manager)
 
-🚀 Happy Mapping! 🌍
+Happy Mapping!
