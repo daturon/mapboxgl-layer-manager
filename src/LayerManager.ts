@@ -1,21 +1,23 @@
+import { AnyLayer, Expression, Layer, Map as MapboxGLMap } from 'mapbox-gl';
 import {
-  AnyLayer,
-  AnyLayout,
-  AnyPaint,
-  AnySourceData,
-  Expression,
-  FilterOptions,
-  Layer,
-  Map as MapboxGLMap,
-} from 'mapbox-gl';
-import { ILayerManager } from './interfaces';
+  ILayerManager,
+  LayerConfig,
+  LayerManagerOptions,
+  Source,
+  StyleSetterOptions,
+} from './interfaces';
+import { LayerAnalyzer } from './LayerAnalyzer';
 import { extendLayerWithConfig } from './utils';
 
-type Source = { id: string; source: AnySourceData };
-type LayerConfig = {
-  filter?: Expression;
-  layout?: AnyLayout;
-  paint?: AnyPaint;
+const OPACITY_PAINT_PROPERTY: Partial<Record<string, string>> = {
+  fill: 'fill-opacity',
+  line: 'line-opacity',
+  circle: 'circle-opacity',
+  symbol: 'icon-opacity',
+  raster: 'raster-opacity',
+  'fill-extrusion': 'fill-extrusion-opacity',
+  heatmap: 'heatmap-opacity',
+  hillshade: 'hillshade-exaggeration',
 };
 
 export default class LayerManager implements ILayerManager {
@@ -25,14 +27,30 @@ export default class LayerManager implements ILayerManager {
   private readonly customLayerIds: Set<string>;
   private readonly customSourcesIds: Set<string>;
   private readonly layerFilters: Map<string, Record<string, Expression>>;
+  private _analyzer: LayerAnalyzer | null = null;
 
-  constructor(map: MapboxGLMap | null, sources: Source[], layers: Layer[]) {
+  constructor(
+    map: MapboxGLMap | null,
+    sources: Source[] = [],
+    layers: Layer[] = [],
+    options?: LayerManagerOptions,
+  ) {
     this.map = map;
     this.sources = sources;
     this.layers = layers;
     this.customLayerIds = new Set<string>();
     this.customSourcesIds = new Set<string>();
     this.layerFilters = new Map<string, Record<string, Expression>>();
+
+    if (options?.analyzer && map) {
+      this._analyzer = new LayerAnalyzer(map);
+      this._analyzer.start();
+    }
+  }
+
+  /** The LayerAnalyzer instance, if enabled via options. */
+  get analyzer(): LayerAnalyzer | null {
+    return this._analyzer;
   }
 
   /**
@@ -144,9 +162,11 @@ export default class LayerManager implements ILayerManager {
 
       // Add new layers
       layerIds.forEach((layerId) => {
-        const newLayer = this.layers.find((l) => l.id == layerId);
+        const newLayer = this.layers.find((l) => l.id === layerId);
 
         if (newLayer) {
+          let layerToAdd: Layer = newLayer;
+
           if (layerConfigs?.[layerId]) {
             if (!this.layerFilters.has(layerId)) {
               this.layerFilters.set(layerId, {});
@@ -156,13 +176,17 @@ export default class LayerManager implements ILayerManager {
               this.layerFilters.get(layerId)!.default = layerConfigs[layerId].filter;
             }
 
-            extendLayerWithConfig(newLayer, layerConfigs[layerId]);
+            layerToAdd = extendLayerWithConfig(newLayer, layerConfigs[layerId]);
           }
 
-          this.map!.addLayer(newLayer as AnyLayer, beforeLayerId);
+          this.map!.addLayer(layerToAdd as AnyLayer, beforeLayerId);
           this.customLayerIds.add(layerId);
         }
       });
+
+      if (this._analyzer) {
+        this._analyzer.setManagedLayerIds(Array.from(this.customLayerIds));
+      }
 
       // Move layers to the right order
       layerIds = layerIds.slice().reverse();
@@ -176,7 +200,7 @@ export default class LayerManager implements ILayerManager {
       });
 
       return new Promise((resolve) => {
-        this.map!.once('render', resolve);
+        this.map!.once('render', () => resolve());
       });
     } catch (error) {
       return Promise.reject(new Error(String(error)));
@@ -266,15 +290,15 @@ export default class LayerManager implements ILayerManager {
   updateLayerLayout(
     layerId: string,
     name: string,
-    value: any,
-    options?: FilterOptions | undefined,
+    value: unknown,
+    options?: StyleSetterOptions,
   ): void {
     if (!this.map) return;
 
     const layer = this.map.getLayer(layerId);
 
     if (layer) {
-      this.map.setLayoutProperty(layerId, name, value, options);
+      (this.map as any).setLayoutProperty(layerId, name, value, options);
     }
   }
 
@@ -302,15 +326,15 @@ export default class LayerManager implements ILayerManager {
   updateLayerPaint(
     layerId: string,
     name: string,
-    value: any,
-    options?: FilterOptions | undefined,
+    value: unknown,
+    options?: StyleSetterOptions,
   ): void {
     if (!this.map) return;
 
     const layer = this.map.getLayer(layerId);
 
     if (layer) {
-      this.map.setPaintProperty(layerId, name, value, options);
+      (this.map as any).setPaintProperty(layerId, name, value, options);
     }
   }
 
@@ -334,7 +358,11 @@ export default class LayerManager implements ILayerManager {
    * layerManager.updateFeatureState(sourceId, featureId, state);
    * ```
    */
-  updateFeatureState(sourceId: string, featureId: string | number, state: any): void {
+  updateFeatureState(
+    sourceId: string,
+    featureId: string | number,
+    state: Record<string, unknown>,
+  ): void {
     if (!this.map) return;
 
     this.map.setFeatureState(
@@ -344,6 +372,70 @@ export default class LayerManager implements ILayerManager {
       },
       state,
     );
+  }
+
+  /**
+   * Sets the opacity of a layer.
+   *
+   * @param layerId - The ID of the layer.
+   * @param opacity - Opacity value between 0 (transparent) and 1 (fully opaque).
+   */
+  setLayerOpacity(layerId: string, opacity: number): void {
+    if (!this.map) return;
+
+    const layer = this.map.getLayer(layerId);
+    if (!layer) return;
+
+    const paintProperty = OPACITY_PAINT_PROPERTY[layer.type];
+    if (paintProperty) {
+      (this.map as any).setPaintProperty(layerId, paintProperty, opacity);
+    }
+  }
+
+  /**
+   * Toggles a layer's visibility between 'visible' and 'none'.
+   *
+   * @param layerId - The ID of the layer to toggle.
+   */
+  toggleLayerVisibility(layerId: string): void {
+    if (!this.map) return;
+
+    const current = this.map.getLayoutProperty(layerId, 'visibility');
+
+    (this.map as any).setLayoutProperty(
+      layerId,
+      'visibility',
+      current === 'none' ? 'visible' : 'none',
+    );
+  }
+
+  /**
+   * Removes all managed layers and sources from the map and resets internal state.
+   * Call this when tearing down the component that owns this LayerManager.
+   */
+  destroy(): void {
+    this._analyzer?.stop();
+    this._analyzer = null;
+
+    if (!this.map) return;
+
+    for (const layerId of this.customLayerIds) {
+      if (this.map.getLayer(layerId)) {
+        this.map.removeLayer(layerId);
+      }
+    }
+    this.customLayerIds.clear();
+
+    for (const sourceId of this.customSourcesIds) {
+      if (this.map.getSource(sourceId)) {
+        this.map.removeSource(sourceId);
+      }
+    }
+    this.customSourcesIds.clear();
+
+    this.layerFilters.clear();
+    this.layers = [];
+    this.sources = [];
   }
 
   /**

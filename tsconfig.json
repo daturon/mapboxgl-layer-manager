@@ -4,6 +4,7 @@
     "rootDir": "./src",
     "target": "ES2022",
     "module": "ESNext",
+    "moduleResolution": "bundler",
     "strict": true,
     "declaration": true,
     "esModuleInterop": true,
