@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Mapbox GL Layer Manager — Demo</title>
+    <link
+      rel="stylesheet"
+      href="https://api.mapbox.com/mapbox-gl-js/v3.10.0/mapbox-gl.css"
+      crossorigin
+    />
+  </head>
+  <body>
+    <!-- Token gate shown when no token is available -->
+    <div id="token-screen">
+      <div class="token-card">
+        <div class="token-logo">🗺️</div>
+        <h1>Mapbox GL Layer Manager</h1>
+        <p class="token-subtitle">Interactive demo — v1.3.0</p>
+        <p class="token-desc">
+          Enter your Mapbox public token to start. Get one free at
+          <a href="https://mapbox.com" target="_blank" rel="noopener">mapbox.com</a>.
+        </p>
+        <form id="token-form">
+          <input
+            id="token-input"
+            type="text"
+            placeholder="pk.eyJ1IjoiZXhhbXBsZSIsImEiOiJja..."
+            autocomplete="off"
+            spellcheck="false"
+          />
+          <button type="submit">Launch Demo →</button>
+        </form>
+        <p class="token-privacy">
+          Your token stays in <code>sessionStorage</code> and is never transmitted anywhere.
+        </p>
+      </div>
+    </div>
+
+    <!-- Main app (hidden until token is available) -->
+    <div id="app" hidden>
+      <header>
+        <div class="header-left">
+          <span class="header-logo">🗺️</span>
+          <h1>Mapbox GL Layer Manager</h1>
+          <span class="version-badge">v1.3.0</span>
+        </div>
+        <div class="header-right">
+          <a
+            href="https://github.com/daturon/mapboxgl-layer-manager"
+            target="_blank"
+            rel="noopener"
+            class="header-link"
+            >GitHub</a
+          >
+          <a
+            href="https://www.npmjs.com/package/@daturon/mapboxgl-layer-manager"
+            target="_blank"
+            rel="noopener"
+            class="header-link"
+            >npm</a
+          >
+        </div>
+      </header>
+      <div class="layout">
+        <div id="map"></div>
+        <aside id="panel"></aside>
+      </div>
+    </div>
+
+    <script type="module" src="./src/main.ts"></script>
+  </body>
+</html>

@@ -39,6 +39,11 @@
   "scripts": {
     "build": "tsup",
     "lint": "eslint .",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "demo:dev": "vite",
+    "demo:build": "vite build",
     "prepare": "husky install",
     "prepublishOnly": "npm run build"
   },
@@ -60,6 +65,7 @@
     "@types/react": "^19.2.14",
     "@typescript-eslint/eslint-plugin": "^8.24.0",
     "@typescript-eslint/parser": "^8.24.0",
+    "@vitest/coverage-v8": "^4.1.2",
     "eslint": "^9.20.1",
     "eslint-config-prettier": "^10.0.1",
     "eslint-plugin-prettier": "^5.2.3",
@@ -70,6 +76,8 @@
     "prettier": "^3.5.1",
     "react": "^19.2.4",
     "tsup": "^8.5.1",
-    "typescript": "^5.7.3"
+    "typescript": "^5.7.3",
+    "vite": "^8.0.3",
+    "vitest": "^4.1.2"
   }
 }
