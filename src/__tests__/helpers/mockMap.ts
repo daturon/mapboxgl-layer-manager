@@ -49,6 +49,25 @@ export const createMockMap = (): MockMap => {
     setFeatureState: vi.fn(),
     moveLayer: vi.fn(),
 
+    // Returns a minimal canvas stub whose WebGL context exposes the
+    // EXT_disjoint_timer_query_webgl2 extension with getQueryParameter so that
+    // LayerAnalyzer.start() enables GPU timing in tests.
+    getCanvas: vi.fn(() => ({
+      getContext: (type: string) => {
+        if (type === 'webgl2') {
+          return {
+            getExtension: (name: string) => {
+              if (name === 'EXT_disjoint_timer_query_webgl2') {
+                return { getQueryParameter: vi.fn() };
+              }
+              return null;
+            },
+          };
+        }
+        return null;
+      },
+    })),
+
     // Immediately invokes the callback so `await renderOrderedLayers()` resolves
     once: vi.fn((_event: string, handler: () => void) => {
       handler();

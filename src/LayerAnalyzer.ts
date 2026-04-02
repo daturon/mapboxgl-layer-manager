@@ -63,6 +63,7 @@ export class LayerAnalyzer {
   private _rendersPerSecond = 0;
   private managedLayerIds: string[] = [];
   private active = false;
+  private gpuTimingEnabled = false;
 
   // Bound handlers kept for cleanup
   private readonly onLoad: () => void;
@@ -142,8 +143,23 @@ export class LayerAnalyzer {
     this.map.on('sourcedataloading', this.onSourceDataLoading);
     this.map.on('sourcedata', this.onSourceData);
     // gpu-timing-* events are v3+ and not yet in @types/mapbox-gl
-    (this.map as unknown as Record<string, Function>)['on']('gpu-timing-frame', this.onGpuFrame);
-    (this.map as unknown as Record<string, Function>)['on']('gpu-timing-layer', this.onGpuLayer);
+    // Only enable if the extension object itself exposes getQueryParameter.
+    // With EXT_disjoint_timer_query_webgl2 in WebGL2, getQueryParameter is
+    // promoted to the gl context rather than the extension object, so
+    // mapbox-gl's queryGpuTimers (which calls ext.getQueryParameter) would
+    // crash. Guard against that by verifying the method exists on the extension.
+    const canvas = this.map.getCanvas();
+    const gl = canvas.getContext('webgl2') || canvas.getContext('webgl');
+    if (gl) {
+      const ext =
+        gl.getExtension('EXT_disjoint_timer_query_webgl2') ||
+        gl.getExtension('EXT_disjoint_timer_query');
+      this.gpuTimingEnabled = !!(ext && typeof (ext as any).getQueryParameter === 'function');
+    }
+    if (this.gpuTimingEnabled) {
+      (this.map as unknown as Record<string, Function>)['on']('gpu-timing-frame', this.onGpuFrame);
+      (this.map as unknown as Record<string, Function>)['on']('gpu-timing-layer', this.onGpuLayer);
+    }
   }
 
   /** Stop collecting data and detach all event listeners. */
@@ -155,8 +171,11 @@ export class LayerAnalyzer {
     this.map.off('render', this.onRender);
     this.map.off('sourcedataloading', this.onSourceDataLoading);
     this.map.off('sourcedata', this.onSourceData);
-    (this.map as unknown as Record<string, Function>)['off']('gpu-timing-frame', this.onGpuFrame);
-    (this.map as unknown as Record<string, Function>)['off']('gpu-timing-layer', this.onGpuLayer);
+    if (this.gpuTimingEnabled) {
+      (this.map as unknown as Record<string, Function>)['off']('gpu-timing-frame', this.onGpuFrame);
+      (this.map as unknown as Record<string, Function>)['off']('gpu-timing-layer', this.onGpuLayer);
+      this.gpuTimingEnabled = false;
+    }
   }
 
   /** Inform the analyzer which layer IDs are managed, enabling unused-layer detection. */
