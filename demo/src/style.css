@@ -393,6 +393,12 @@ header h1 {
 .toggle-track-sm { width: 26px !important; height: 14px !important; }
 .toggle-track-sm::after { width: 10px !important; height: 10px !important; }
 
+/* ── Animations section ─────────────────────────────────────────────── */
+.anim-row { display: flex; align-items: center; gap: 9px; padding: 7px 12px; border-bottom: 1px solid var(--border); }
+.anim-row:last-child { border-bottom: none; }
+.anim-emoji { font-size: 14px; }
+.anim-label { font-size: 0.8rem; font-weight: 500; }
+
 /* ── State Inspector ────────────────────────────────────────────────── */
 .state-content { display: flex; flex-direction: column; gap: 10px; margin-top: 10px; }
 .state-label { font-size: 0.65rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); margin-bottom: 2px; }
