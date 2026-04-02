@@ -637,19 +637,36 @@ export function createPlaneIcon(): { width: number; height: number; data: Uint8C
 
   // Draw a simple upward-pointing plane silhouette
   const body: [number, number][] = [
-    [16, 3], [18, 7], [18, 18], [16, 18], [14, 18], [14, 7],
+    [16, 3],
+    [18, 7],
+    [18, 18],
+    [16, 18],
+    [14, 18],
+    [14, 7],
   ];
   const wingL: [number, number][] = [
-    [14, 10], [5, 16], [5, 18], [14, 15],
+    [14, 10],
+    [5, 16],
+    [5, 18],
+    [14, 15],
   ];
   const wingR: [number, number][] = [
-    [18, 10], [27, 16], [27, 18], [18, 15],
+    [18, 10],
+    [27, 16],
+    [27, 18],
+    [18, 15],
   ];
   const tailL: [number, number][] = [
-    [14, 18], [10, 22], [10, 24], [14, 21],
+    [14, 18],
+    [10, 22],
+    [10, 24],
+    [14, 21],
   ];
   const tailR: [number, number][] = [
-    [18, 18], [22, 22], [22, 24], [18, 21],
+    [18, 18],
+    [22, 22],
+    [22, 24],
+    [18, 21],
   ];
 
   function fillPoly(poly: [number, number][]): void {
