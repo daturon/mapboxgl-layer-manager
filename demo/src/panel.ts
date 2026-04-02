@@ -1,6 +1,6 @@
 import type { LayerManager } from '@daturon/mapboxgl-layer-manager';
 import type { LayerAnalyzer, AnalyzerReport } from '@daturon/mapboxgl-layer-manager';
-import type { Expression, Layer } from 'mapbox-gl';
+import type { Expression, Layer, GeoJSONSource } from 'mapbox-gl';
 import {
   LAYER_GROUPS,
   LAYERS,
@@ -9,6 +9,8 @@ import {
   SOURCE_GROUPS,
   DEFAULT_LAYER_ORDER,
   SOURCES,
+  PLANES_LAYER,
+  FLIGHT_ROUTES_GEOJSON,
   type LayerGroup,
   type SourceGroup,
   type Preset,
@@ -47,6 +49,20 @@ export class Panel {
   private tabContentEl: HTMLElement | null = null;
   private stateEl: HTMLElement | null = null;
 
+  // ── Animation state ────────────────────────────────────────────────────────
+  private animGlobeSpin = false;
+  private animRouteDashes = false;
+  private animPulseQuakes = false;
+  private animMovingPlanes = false;
+  private animFrameId: number | null = null;
+  private animStartTime = 0;
+  private spinPaused = false;
+  private spinResumeTimer: ReturnType<typeof setTimeout> | null = null;
+  private spinContainer: HTMLElement | null = null;
+  private spinPauseFn: (() => void) | null = null;
+  private spinResumeFn: (() => void) | null = null;
+  private planeProgress: number[] = FLIGHT_ROUTES_GEOJSON.features.map(() => Math.random());
+
   constructor(manager: LayerManager, beforeLayerId?: string) {
     this.manager = manager;
     this.analyzer = manager.analyzer;
@@ -69,6 +85,13 @@ export class Panel {
 
   destroy(): void {
     if (this.refreshInterval) clearInterval(this.refreshInterval);
+    this.stopAnimLoop();
+    this.detachSpinHandlers();
+    // Hide planes on destroy (source/layer are owned by the map)
+    const map = this.manager.getMapInstance();
+    if (map?.getLayer('demo-planes')) {
+      map.setLayoutProperty('demo-planes', 'visibility', 'none');
+    }
   }
 
   // ── Panel DOM ─────────────────────────────────────────────────────────────
@@ -88,6 +111,7 @@ export class Panel {
     this.stateEl = el('section', 'panel-section state-inspector');
     this.fillStateInspector(this.stateEl);
     frag.appendChild(this.stateEl);
+    frag.appendChild(this.buildAnimationsSection());
     frag.appendChild(this.buildAnalyzerSection());
     return frag;
   }
@@ -308,6 +332,15 @@ export class Panel {
     this.layerOrder = [...preset.layerOrder].reverse();
     this.visibleLayerIds = new Set(preset.layerOrder);
     this.applyLayerOrder();
+    if (preset.view) {
+      const map = this.manager.getMapInstance();
+      map?.flyTo({
+        center: preset.view.center,
+        zoom: preset.view.zoom,
+        pitch: preset.view.pitch ?? 0,
+        duration: 1500,
+      });
+    }
     if (this.tabContentEl && this.activeTab === 'presets') {
       this.tabContentEl.innerHTML = '';
       this.tabContentEl.appendChild(this.buildPresetsTab());
@@ -464,6 +497,242 @@ export class Panel {
     if (!this.tabContentEl || this.activeTab !== 'add-remove') return;
     this.tabContentEl.innerHTML = '';
     this.tabContentEl.appendChild(this.buildAddRemoveTab());
+  }
+
+  // ── Animations UI ─────────────────────────────────────────────────────────
+
+  private buildAnimationsSection(): HTMLElement {
+    const section = el('section', 'panel-section');
+    section.appendChild(
+      el('div', 'section-title-row', [
+        el('span', 'section-title', [], { textContent: 'Animations' }),
+      ]),
+    );
+    section.appendChild(
+      el('p', 'section-hint', [], {
+        textContent: 'Live map animations — each runs independently.',
+      }),
+    );
+
+    const card = el('div', 'layer-card');
+
+    const animations: { label: string; emoji: string; get: () => boolean; toggle: (v: boolean) => void }[] = [
+      {
+        label: 'Globe Spin',
+        emoji: '🌐',
+        get: () => this.animGlobeSpin,
+        toggle: (v) => {
+          this.animGlobeSpin = v;
+          if (v) this.attachSpinHandlers();
+          else this.detachSpinHandlers();
+          this.ensureAnimLoop();
+        },
+      },
+      {
+        label: 'Route Dashes',
+        emoji: '✈️',
+        get: () => this.animRouteDashes,
+        toggle: (v) => {
+          this.animRouteDashes = v;
+          if (!v) {
+            const map = this.manager.getMapInstance();
+            if (map?.getLayer('demo-flight-routes')) {
+              map.setPaintProperty('demo-flight-routes', 'line-dasharray', [3, 2]);
+            }
+          }
+          this.ensureAnimLoop();
+        },
+      },
+      {
+        label: 'Pulse Earthquakes',
+        emoji: '🔴',
+        get: () => this.animPulseQuakes,
+        toggle: (v) => {
+          this.animPulseQuakes = v;
+          if (!v) {
+            const map = this.manager.getMapInstance();
+            if (map?.getLayer('demo-earthquake-points')) {
+              map.setPaintProperty('demo-earthquake-points', 'circle-radius', [
+                'interpolate', ['linear'], ['get', 'mag'], 4, 4, 7, 12, 9, 24,
+              ]);
+            }
+          }
+          this.ensureAnimLoop();
+        },
+      },
+      {
+        label: 'Moving Planes',
+        emoji: '🛫',
+        get: () => this.animMovingPlanes,
+        toggle: (v) => {
+          this.animMovingPlanes = v;
+          const map = this.manager.getMapInstance();
+          if (map?.getLayer('demo-planes')) {
+            map.setLayoutProperty('demo-planes', 'visibility', v ? 'visible' : 'none');
+          }
+          this.ensureAnimLoop();
+        },
+      },
+    ];
+
+    for (const anim of animations) {
+      const row = el('div', 'anim-row');
+      const toggleLabel = el('label', 'source-toggle');
+      const cb = el('input') as HTMLInputElement;
+      cb.type = 'checkbox';
+      cb.checked = anim.get();
+      cb.onchange = () => anim.toggle(cb.checked);
+      toggleLabel.appendChild(cb);
+      toggleLabel.appendChild(el('span', 'toggle-track'));
+      row.appendChild(toggleLabel);
+      row.appendChild(el('span', 'anim-emoji', [], { textContent: anim.emoji }));
+      row.appendChild(el('span', 'anim-label', [], { textContent: anim.label }));
+      card.appendChild(row);
+    }
+
+    section.appendChild(card);
+    return section;
+  }
+
+  // ── Animation Engine ──────────────────────────────────────────────────────
+
+  private ensureAnimLoop(): void {
+    const any = this.animGlobeSpin || this.animRouteDashes || this.animPulseQuakes || this.animMovingPlanes;
+    if (any && this.animFrameId === null) {
+      this.animStartTime = performance.now();
+      this.animFrameId = requestAnimationFrame((t) => this.tickAnimations(t));
+    } else if (!any && this.animFrameId !== null) {
+      this.stopAnimLoop();
+    }
+  }
+
+  private stopAnimLoop(): void {
+    if (this.animFrameId !== null) {
+      cancelAnimationFrame(this.animFrameId);
+      this.animFrameId = null;
+    }
+  }
+
+  private tickAnimations(now: number): void {
+    const map = this.manager.getMapInstance();
+    if (!map) { this.animFrameId = null; return; }
+    const elapsed = now - this.animStartTime;
+
+    // 1. Globe spin
+    if (this.animGlobeSpin && !this.spinPaused) {
+      const center = map.getCenter();
+      center.lng = (center.lng - 0.06 + 180) % 360 - 180;
+      map.easeTo({ center, duration: 0, easing: (t) => t });
+    }
+
+    // 2. Route dashes — marching ants: keep dash+gap constant (5) and shift phase
+    if (this.animRouteDashes && map.getLayer('demo-flight-routes')) {
+      const DASH = 3, GAP = 2;
+      // p cycles 0→5 over 2 seconds; clamp tail/inGap away from 0 to avoid zero-width segments
+      const p = ((elapsed % 2000) / 2000) * (DASH + GAP);
+      let dasharray: number[];
+      if (p < DASH) {
+        const tail = Math.max(0.001, p);
+        dasharray = [DASH - tail, GAP, tail];          // [remaining-dash, gap, elapsed-dash]
+      } else {
+        const inGap = Math.max(0.001, p - DASH);
+        dasharray = [0.001, GAP - inGap, DASH, inGap]; // [tiny, remaining-gap, full-dash, elapsed-gap]
+      }
+      map.setPaintProperty('demo-flight-routes', 'line-dasharray', dasharray);
+    }
+
+    // 3. Pulse earthquake circles
+    if (this.animPulseQuakes && map.getLayer('demo-earthquake-points')) {
+      const pulse = 1 + 0.25 * Math.sin((elapsed / 800) * Math.PI * 2);
+      map.setPaintProperty('demo-earthquake-points', 'circle-radius', [
+        'interpolate', ['linear'], ['get', 'mag'],
+        4, 4 * pulse,
+        7, 12 * pulse,
+        9, 24 * pulse,
+      ]);
+    }
+
+    // 4. Moving planes along great-circle routes
+    if (this.animMovingPlanes && map.getSource('demo-planes')) {
+      const routes = FLIGHT_ROUTES_GEOJSON.features;
+      // Each route completes in 8–16s (staggered by index)
+      const features = routes.map((route, i) => {
+        const period = 8000 + (i % 4) * 2000;
+        const progress = ((elapsed / period) + this.planeProgress[i]) % 1;
+        const coords = route.geometry.coordinates as [number, number][];
+        const posIdx = Math.min(Math.floor(progress * (coords.length - 1)), coords.length - 2);
+        const t = progress * (coords.length - 1) - posIdx;
+        const [lon1, lat1] = coords[posIdx];
+        const [lon2, lat2] = coords[posIdx + 1];
+        const lon = lon1 + (lon2 - lon1) * t;
+        const lat = lat1 + (lat2 - lat1) * t;
+        // Bearing in degrees from north
+        const dLon = ((lon2 - lon1) * Math.PI) / 180;
+        const φ1 = (lat1 * Math.PI) / 180;
+        const φ2 = (lat2 * Math.PI) / 180;
+        const y = Math.sin(dLon) * Math.cos(φ2);
+        const x = Math.cos(φ1) * Math.sin(φ2) - Math.sin(φ1) * Math.cos(φ2) * Math.cos(dLon);
+        const bearing = ((Math.atan2(y, x) * 180) / Math.PI + 360) % 360;
+        return {
+          type: 'Feature' as const,
+          geometry: { type: 'Point' as const, coordinates: [lon, lat] },
+          properties: { bearing },
+        };
+      });
+
+      (map.getSource('demo-planes') as GeoJSONSource).setData({
+        type: 'FeatureCollection',
+        features,
+      });
+    }
+
+    const any = this.animGlobeSpin || this.animRouteDashes || this.animPulseQuakes || this.animMovingPlanes;
+    if (any) {
+      this.animFrameId = requestAnimationFrame((t) => this.tickAnimations(t));
+    } else {
+      this.animFrameId = null;
+    }
+  }
+
+  // ── Globe spin interaction handlers ──────────────────────────────────────
+
+  private attachSpinHandlers(): void {
+    const map = this.manager.getMapInstance();
+    if (!map) return;
+    // Use the map container's DOM events — avoids Mapbox event type narrowing issues
+    const container = map.getContainer();
+    this.spinContainer = container;
+    this.spinPauseFn = () => { this.spinPaused = true; };
+    this.spinResumeFn = () => {
+      if (this.spinResumeTimer) clearTimeout(this.spinResumeTimer);
+      this.spinResumeTimer = setTimeout(() => { this.spinPaused = false; }, 2000);
+    };
+    container.addEventListener('mousedown', this.spinPauseFn);
+    container.addEventListener('touchstart', this.spinPauseFn, { passive: true });
+    container.addEventListener('wheel', this.spinPauseFn, { passive: true });
+    container.addEventListener('mouseup', this.spinResumeFn);
+    container.addEventListener('touchend', this.spinResumeFn);
+    map.on('dragend', this.spinResumeFn);
+  }
+
+  private detachSpinHandlers(): void {
+    if (this.spinContainer && this.spinPauseFn && this.spinResumeFn) {
+      this.spinContainer.removeEventListener('mousedown', this.spinPauseFn);
+      this.spinContainer.removeEventListener('touchstart', this.spinPauseFn);
+      this.spinContainer.removeEventListener('wheel', this.spinPauseFn);
+      this.spinContainer.removeEventListener('mouseup', this.spinResumeFn);
+      this.spinContainer.removeEventListener('touchend', this.spinResumeFn);
+      const map = this.manager.getMapInstance();
+      if (map) map.off('dragend', this.spinResumeFn);
+    }
+    this.spinContainer = null;
+    this.spinPauseFn = null;
+    this.spinResumeFn = null;
+    this.spinPaused = false;
+    if (this.spinResumeTimer) {
+      clearTimeout(this.spinResumeTimer);
+      this.spinResumeTimer = null;
+    }
   }
 
   // ── State Inspector ───────────────────────────────────────────────────────

@@ -1,7 +1,7 @@
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { LayerManager } from '@daturon/mapboxgl-layer-manager';
-import { SOURCES, LAYERS, DEFAULT_LAYER_ORDER } from './data';
+import { SOURCES, LAYERS, DEFAULT_LAYER_ORDER, createPlaneIcon, PLANES_LAYER } from './data';
 import { Panel } from './panel';
 import './style.css';
 
@@ -70,10 +70,44 @@ function initApp(accessToken: string): void {
 
     const firstSymbolId = map.getStyle().layers?.find((l) => l.type === 'symbol')?.id;
 
+    // Register inline plane icon (SDF allows icon-color tinting)
+    if (!map.hasImage('demo-plane')) {
+      map.addImage('demo-plane', createPlaneIcon(), { sdf: true });
+    }
+
     try {
       await manager.renderOrderedLayers(DEFAULT_LAYER_ORDER, undefined, firstSymbolId);
     } catch (err) {
       console.error('Failed to render layers:', err);
+    }
+
+    // Pre-add planes source + layer (hidden, below firstSymbolId) so toggle is a simple visibility switch
+    try {
+      map.addSource('demo-planes', {
+        type: 'geojson',
+        data: { type: 'FeatureCollection', features: [] },
+      });
+      const planesLayerSpec = {
+        id: 'demo-planes',
+        type: 'symbol',
+        source: 'demo-planes',
+        layout: {
+          'icon-image': 'demo-plane',
+          'icon-rotate': ['get', 'bearing'],
+          'icon-rotation-alignment': 'map',
+          'icon-size': 0.7,
+          'icon-allow-overlap': true,
+          'icon-ignore-placement': true,
+          'visibility': 'none',
+        },
+        paint: {
+          'icon-color': '#fbbf24',
+          'icon-opacity': 0.95,
+        },
+      } as Parameters<typeof map.addLayer>[0];
+      map.addLayer(planesLayerSpec, firstSymbolId);
+    } catch (err) {
+      console.warn('Could not pre-add planes layer:', err);
     }
 
     panel = new Panel(manager, firstSymbolId);

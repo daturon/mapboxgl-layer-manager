@@ -538,12 +538,19 @@ export const DEFAULT_LAYER_ORDER = [
 
 // ── Preset configurations ─────────────────────────────────────────────────────
 
+export interface PresetView {
+  center: [number, number];
+  zoom: number;
+  pitch?: number;
+}
+
 export interface Preset {
   id: string;
   label: string;
   emoji: string;
   description: string;
   layerOrder: string[];
+  view?: PresetView;
 }
 
 export const PRESETS: Preset[] = [
@@ -553,6 +560,7 @@ export const PRESETS: Preset[] = [
     emoji: '🌍',
     description: 'All 10 layers — fill, line, circle, symbol, heatmap',
     layerOrder: DEFAULT_LAYER_ORDER,
+    view: { center: [10, 20], zoom: 1.8, pitch: 0 },
   },
   {
     id: 'geopolitical',
@@ -567,6 +575,7 @@ export const PRESETS: Preset[] = [
       'demo-capitals-labels',
       'demo-region-labels',
     ],
+    view: { center: [20, 30], zoom: 2.5, pitch: 0 },
   },
   {
     id: 'seismic',
@@ -581,18 +590,20 @@ export const PRESETS: Preset[] = [
       'demo-earthquake-points',
       'demo-capitals',
     ],
+    view: { center: [155, 20], zoom: 2.0, pitch: 0 },
   },
   {
     id: 'terrain',
     label: 'Natural Terrain',
     emoji: '🏔️',
-    description: 'Landcover fills + elevation contour lines, no data layers',
+    description: 'Landcover fills + elevation contour lines — zooms to Alps for detail',
     layerOrder: [
       'demo-landcover',
       'demo-terrain-contours',
       'demo-country-borders',
       'demo-region-labels',
     ],
+    view: { center: [11.4, 47.3], zoom: 7, pitch: 40 },
   },
   {
     id: 'air-traffic',
@@ -606,6 +617,7 @@ export const PRESETS: Preset[] = [
       'demo-capitals',
       'demo-capitals-labels',
     ],
+    view: { center: [10, 30], zoom: 2.2, pitch: 0 },
   },
   {
     id: 'minimal',
@@ -613,8 +625,89 @@ export const PRESETS: Preset[] = [
     emoji: '✦',
     description: 'Clean capital city points and labels only',
     layerOrder: ['demo-capitals', 'demo-capitals-labels'],
+    view: { center: [30, 25], zoom: 3.0, pitch: 0 },
   },
 ];
+
+// ── Animated plane icon (inline SDF — 32×32 white arrow pointing up) ───────────
+
+export function createPlaneIcon(): { width: number; height: number; data: Uint8ClampedArray } {
+  const size = 32;
+  const data = new Uint8ClampedArray(size * size * 4);
+
+  // Draw a simple upward-pointing plane silhouette
+  const body: [number, number][] = [
+    [16, 3], [18, 7], [18, 18], [16, 18], [14, 18], [14, 7],
+  ];
+  const wingL: [number, number][] = [
+    [14, 10], [5, 16], [5, 18], [14, 15],
+  ];
+  const wingR: [number, number][] = [
+    [18, 10], [27, 16], [27, 18], [18, 15],
+  ];
+  const tailL: [number, number][] = [
+    [14, 18], [10, 22], [10, 24], [14, 21],
+  ];
+  const tailR: [number, number][] = [
+    [18, 18], [22, 22], [22, 24], [18, 21],
+  ];
+
+  function fillPoly(poly: [number, number][]): void {
+    const minY = Math.min(...poly.map((p) => p[1]));
+    const maxY = Math.max(...poly.map((p) => p[1]));
+    for (let y = minY; y <= maxY; y++) {
+      const xs: number[] = [];
+      const n = poly.length;
+      for (let i = 0, j = n - 1; i < n; j = i++) {
+        const [x0, y0] = poly[j];
+        const [x1, y1] = poly[i];
+        if ((y0 <= y && y < y1) || (y1 <= y && y < y0)) {
+          xs.push(Math.round(x0 + ((y - y0) * (x1 - x0)) / (y1 - y0)));
+        }
+      }
+      xs.sort((a, b) => a - b);
+      for (let k = 0; k + 1 < xs.length; k += 2) {
+        for (let x = xs[k]; x <= xs[k + 1]; x++) {
+          if (x >= 0 && x < size && y >= 0 && y < size) {
+            const idx = (y * size + x) * 4;
+            data[idx] = 255;
+            data[idx + 1] = 255;
+            data[idx + 2] = 255;
+            data[idx + 3] = 255;
+          }
+        }
+      }
+    }
+  }
+
+  fillPoly(body);
+  fillPoly(wingL);
+  fillPoly(wingR);
+  fillPoly(tailL);
+  fillPoly(tailR);
+
+  return { width: size, height: size, data };
+}
+
+// ── Moving planes source/layer (animation-only, not in any preset) ────────────
+
+export const PLANES_LAYER: Layer = {
+  id: 'demo-planes',
+  type: 'symbol',
+  source: 'demo-planes',
+  layout: {
+    'icon-image': 'demo-plane',
+    'icon-rotate': ['get', 'bearing'] as unknown as number,
+    'icon-rotation-alignment': 'map',
+    'icon-size': 0.7,
+    'icon-allow-overlap': true,
+    'icon-ignore-placement': true,
+  },
+  paint: {
+    'icon-color': '#fbbf24',
+    'icon-opacity': 0.95,
+  },
+} as unknown as Layer;
 
 // ── Source groups for Add/Remove UI ──────────────────────────────────────────
 
@@ -733,6 +826,7 @@ export const LAYER_GROUPS: LayerGroup[] = [
 
 // Layer type metadata for UI badges
 export const LAYER_TYPE: Record<string, string> = {
+  'demo-planes': 'symbol',
   'demo-landcover': 'fill',
   'demo-country-fill': 'fill',
   'demo-country-borders': 'line',
