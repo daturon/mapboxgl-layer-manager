@@ -1,7 +1,7 @@
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { LayerManager } from '@daturon/mapboxgl-layer-manager';
-import { SOURCES, LAYERS, DEFAULT_LAYER_ORDER, createPlaneIcon, PLANES_LAYER } from './data';
+import { SOURCES, LAYERS, DEFAULT_LAYER_ORDER, createPlaneIcon } from './data';
 import { Panel } from './panel';
 import './style.css';
 
@@ -98,7 +98,7 @@ function initApp(accessToken: string): void {
           'icon-size': 0.7,
           'icon-allow-overlap': true,
           'icon-ignore-placement': true,
-          'visibility': 'none',
+          visibility: 'none',
         },
         paint: {
           'icon-color': '#fbbf24',
