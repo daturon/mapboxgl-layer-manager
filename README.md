@@ -1,12 +1,15 @@
 # Mapbox GL Layer Manager
 
 ![npm version](https://img.shields.io/npm/v/@daturon/mapboxgl-layer-manager)
+[![CI](https://github.com/daturon/mapboxgl-layer-manager/actions/workflows/ci.yml/badge.svg)](https://github.com/daturon/mapboxgl-layer-manager/actions/workflows/ci.yml)
 
 **The Layer Manager for Mapbox GL** is a powerful utility that simplifies the management of layers and sources in the **Mapbox GL** environment. This package allows easy **layer reordering, visibility toggling, opacity adjustments, and other modifications**, making it an essential tool for developers working with interactive maps.
 
 It supports dynamic management of multiple sources and layers, allowing developers to **dynamically change active sources, reorder layers efficiently, and automatically free unused resources** to optimize performance.
 
 New in v1.3: built-in **Performance Analyzer** that surfaces per-layer GPU timing, source load times, frame stats, and actionable optimization suggestions — and a first-class **React hook** (`useLayerManager`) for seamless SPA integration.
+
+**Live demo (GitHub Pages):** [Try the interactive demo](https://daturon.github.io/mapboxgl-layer-manager/) — layer controls, filters, and the performance analyzer in the browser. Your Mapbox public token stays in `sessionStorage` and is not sent to this project’s servers.
 
 ---
 
@@ -30,6 +33,30 @@ npm install @daturon/mapboxgl-layer-manager
 ```
 
 `mapbox-gl` (>=3.0.0) is a required peer dependency. React (>=16.8.0) is optional — only needed if you use the React hook.
+
+---
+
+## Repository layout
+
+```
+mapboxgl-layer-manager/
+├── demo/                    # Vite app published to GitHub Pages (`demo:dev`, `demo:build`)
+├── src/
+│   ├── index.ts             # package entry
+│   ├── LayerManager.ts
+│   ├── LayerAnalyzer.ts
+│   ├── utils.ts
+│   ├── interfaces.ts
+│   ├── react.ts             # `useLayerManager`; separate bundle (see tsup.config.ts)
+│   └── __tests__/
+│       ├── *.test.ts
+│       └── helpers/
+│           └── mockMap.ts
+├── tsup.config.ts           # `index` + `react` (ESM, CJS, declarations)
+└── vitest.config.ts
+```
+
+Gitignored build output: `dist/` (npm package), `demo-dist/` (static demo build), `coverage/` (after coverage run).
 
 ---
 
@@ -213,7 +240,11 @@ function MapLayers({ map }: { map: mapboxgl.Map | null }) {
 
 ---
 
-[![Watch the demo](https://img.youtube.com/vi/2fY3GIyvchk/0.jpg)](https://www.youtube.com/watch?v=2fY3GIyvchk)
+## Development
+
+Tests run with [Vitest](https://vitest.dev/). `npm test` runs the suite once (same command as CI). Use `npm run test:watch` for a watch mode while you work.
+
+**Coverage:** `npm run test:coverage` prints a V8 summary in the terminal and writes an HTML report to `coverage/index.html` (the `coverage/` directory is gitignored). Coverage is collected for `src/**/*.ts` except `src/__tests__/**` and **`src/react.ts`**, so the React hook module is intentionally excluded from coverage reports.
 
 ---
 
@@ -223,7 +254,8 @@ function MapLayers({ map }: { map: mapboxgl.Map | null }) {
 2. Install dependencies: `npm install`
 3. Build: `npm run build`
 4. Lint: `npm run lint`
-5. Open a pull request with your changes.
+5. Run tests: `npm test`
+6. Open a pull request with your changes.
 
 ---
 
@@ -233,6 +265,7 @@ MIT — see [LICENSE](LICENSE).
 
 ## Links
 
+- **Live demo**: [daturon.github.io/mapboxgl-layer-manager](https://daturon.github.io/mapboxgl-layer-manager/)
 - **GitHub**: [daturon/mapboxgl-layer-manager](https://github.com/daturon/mapboxgl-layer-manager)
 - **Issues**: [GitHub Issues](https://github.com/daturon/mapboxgl-layer-manager/issues)
 - **npm**: [@daturon/mapboxgl-layer-manager](https://www.npmjs.com/package/@daturon/mapboxgl-layer-manager)
