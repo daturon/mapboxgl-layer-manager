@@ -191,6 +191,14 @@ describe('LayerManager', () => {
       expect(map.setPaintProperty).toHaveBeenCalledWith('fl', 'fill-opacity', 0.3);
     });
 
+    it('is a no-op for a hillshade layer (no opacity paint property)', () => {
+      const hillshadeLayer = { id: 'hl', type: 'hillshade', source: 's1' } as unknown as Layer;
+      manager.addLayers([hillshadeLayer]);
+      manager.setLayerOpacity('hl', 0.5);
+
+      expect(map.setPaintProperty).not.toHaveBeenCalled();
+    });
+
     it('is a no-op for an unknown layer id', () => {
       manager.setLayerOpacity('nonexistent', 0.5);
       expect(map.setPaintProperty).not.toHaveBeenCalled();
@@ -275,6 +283,82 @@ describe('LayerManager', () => {
       expect(mgr.analyzer).not.toBeNull();
       mgr.destroy();
       expect(mgr.analyzer).toBeNull();
+    });
+  });
+
+  // ── debug mode ─────────────────────────────────────────────────────────────
+
+  describe('debug mode', () => {
+    it('emits console.warn when debug is true and map is null', () => {
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      const mgr = new LayerManager(null, [], [], { debug: true });
+      mgr.addSources([makeSource('s1')]);
+
+      expect(warnSpy).toHaveBeenCalledWith(
+        expect.stringContaining('addSources: map is not initialized'),
+      );
+      warnSpy.mockRestore();
+    });
+
+    it('does not emit console.warn when debug is false', () => {
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      const mgr = new LayerManager(null);
+      mgr.addSources([makeSource('s1')]);
+
+      expect(warnSpy).not.toHaveBeenCalled();
+      warnSpy.mockRestore();
+    });
+
+    it('warns when setLayerOpacity is called with missing layer', () => {
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      const mgr = new LayerManager(map, [], [], { debug: true });
+      mgr.setLayerOpacity('nonexistent', 0.5);
+
+      expect(warnSpy).toHaveBeenCalledWith(
+        expect.stringContaining('layer "nonexistent" not found'),
+      );
+      warnSpy.mockRestore();
+    });
+  });
+
+  // ── opacity clamping ──────────────────────────────────────────────────────
+
+  describe('opacity clamping', () => {
+    it('clamps opacity values above 1 to 1', () => {
+      manager.addLayers([makeLayer('l1', 's1')]);
+      manager.setLayerOpacity('l1', 1.5);
+
+      expect(map.setPaintProperty).toHaveBeenCalledWith('l1', 'circle-opacity', 1);
+    });
+
+    it('clamps opacity values below 0 to 0', () => {
+      manager.addLayers([makeLayer('l1', 's1')]);
+      manager.setLayerOpacity('l1', -0.5);
+
+      expect(map.setPaintProperty).toHaveBeenCalledWith('l1', 'circle-opacity', 0);
+    });
+  });
+
+  // ── error preservation ────────────────────────────────────────────────────
+
+  describe('renderOrderedLayers error handling', () => {
+    it('preserves the original Error object in rejection', async () => {
+      const originalError = new Error('addSource failed');
+      map.addSource.mockImplementationOnce(() => {
+        throw originalError;
+      });
+
+      const mgr = new LayerManager(map, [makeSource('s1')], [makeLayer('l1', 's1')]);
+      await expect(mgr.renderOrderedLayers(['l1'])).rejects.toBe(originalError);
+    });
+
+    it('wraps non-Error throwables in an Error', async () => {
+      map.addSource.mockImplementationOnce(() => {
+        throw 'string error';
+      });
+
+      const mgr = new LayerManager(map, [makeSource('s1')], [makeLayer('l1', 's1')]);
+      await expect(mgr.renderOrderedLayers(['l1'])).rejects.toThrow('string error');
     });
   });
 

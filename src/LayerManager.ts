@@ -17,7 +17,6 @@ const OPACITY_PAINT_PROPERTY: Partial<Record<string, string>> = {
   raster: 'raster-opacity',
   'fill-extrusion': 'fill-extrusion-opacity',
   heatmap: 'heatmap-opacity',
-  hillshade: 'hillshade-exaggeration',
 };
 
 export default class LayerManager implements ILayerManager {
@@ -28,6 +27,7 @@ export default class LayerManager implements ILayerManager {
   private readonly customSourcesIds: Set<string>;
   private readonly layerFilters: Map<string, Record<string, Expression>>;
   private _analyzer: LayerAnalyzer | null = null;
+  private readonly debug: boolean;
 
   constructor(
     map: MapboxGLMap | null,
@@ -41,11 +41,16 @@ export default class LayerManager implements ILayerManager {
     this.customLayerIds = new Set<string>();
     this.customSourcesIds = new Set<string>();
     this.layerFilters = new Map<string, Record<string, Expression>>();
+    this.debug = options?.debug ?? false;
 
     if (options?.analyzer && map) {
       this._analyzer = new LayerAnalyzer(map);
       this._analyzer.start();
     }
+  }
+
+  private warn(message: string): void {
+    if (this.debug) console.warn(`[LayerManager] ${message}`);
   }
 
   /** The LayerAnalyzer instance, if enabled via options. */
@@ -203,7 +208,7 @@ export default class LayerManager implements ILayerManager {
         this.map!.once('render', () => resolve());
       });
     } catch (error) {
-      return Promise.reject(new Error(String(error)));
+      return Promise.reject(error instanceof Error ? error : new Error(String(error)));
     }
   }
 
@@ -227,19 +232,25 @@ export default class LayerManager implements ILayerManager {
    * ```
    */
   updateLayerFilter(layerId: string, filter: Expression, filterName: string = 'default'): void {
-    if (!this.map) return;
+    if (!this.map) {
+      this.warn('updateLayerFilter: map is not initialized');
+      return;
+    }
 
     const layer = this.map.getLayer(layerId);
 
-    if (layer) {
-      if (!this.layerFilters.has(layerId)) {
-        this.layerFilters.set(layerId, {});
-      }
-
-      this.layerFilters.get(layerId)![filterName] = filter;
-
-      this.map.setFilter(layerId, ['all', ...Object.values(this.layerFilters.get(layerId)!)]);
+    if (!layer) {
+      this.warn(`updateLayerFilter: layer "${layerId}" not found`);
+      return;
     }
+
+    if (!this.layerFilters.has(layerId)) {
+      this.layerFilters.set(layerId, {});
+    }
+
+    this.layerFilters.get(layerId)![filterName] = filter;
+
+    this.map.setFilter(layerId, ['all', ...Object.values(this.layerFilters.get(layerId)!)]);
   }
 
   /**
@@ -255,7 +266,10 @@ export default class LayerManager implements ILayerManager {
    * on the map.
    */
   removeLayerFilter(layerId: string, filterName: string): void {
-    if (!this.map) return;
+    if (!this.map) {
+      this.warn('removeLayerFilter: map is not initialized');
+      return;
+    }
 
     const layer = this.map.getLayer(layerId);
 
@@ -293,7 +307,10 @@ export default class LayerManager implements ILayerManager {
     value: unknown,
     options?: StyleSetterOptions,
   ): void {
-    if (!this.map) return;
+    if (!this.map) {
+      this.warn('updateLayerLayout: map is not initialized');
+      return;
+    }
 
     const layer = this.map.getLayer(layerId);
 
@@ -329,7 +346,10 @@ export default class LayerManager implements ILayerManager {
     value: unknown,
     options?: StyleSetterOptions,
   ): void {
-    if (!this.map) return;
+    if (!this.map) {
+      this.warn('updateLayerPaint: map is not initialized');
+      return;
+    }
 
     const layer = this.map.getLayer(layerId);
 
@@ -363,7 +383,10 @@ export default class LayerManager implements ILayerManager {
     featureId: string | number,
     state: Record<string, unknown>,
   ): void {
-    if (!this.map) return;
+    if (!this.map) {
+      this.warn('updateFeatureState: map is not initialized');
+      return;
+    }
 
     this.map.setFeatureState(
       {
@@ -381,15 +404,29 @@ export default class LayerManager implements ILayerManager {
    * @param opacity - Opacity value between 0 (transparent) and 1 (fully opaque).
    */
   setLayerOpacity(layerId: string, opacity: number): void {
-    if (!this.map) return;
+    if (!this.map) {
+      this.warn('setLayerOpacity: map is not initialized');
+      return;
+    }
 
     const layer = this.map.getLayer(layerId);
-    if (!layer) return;
+    if (!layer) {
+      this.warn(`setLayerOpacity: layer "${layerId}" not found`);
+      return;
+    }
 
     const paintProperty = OPACITY_PAINT_PROPERTY[layer.type];
-    if (paintProperty) {
-      (this.map as any).setPaintProperty(layerId, paintProperty, opacity);
+    if (!paintProperty) {
+      this.warn(`setLayerOpacity: no opacity property for layer type "${layer.type}"`);
+      return;
     }
+
+    const clamped = Math.max(0, Math.min(1, opacity));
+    if (clamped !== opacity) {
+      this.warn(`setLayerOpacity: opacity ${opacity} clamped to ${clamped}`);
+    }
+
+    (this.map as any).setPaintProperty(layerId, paintProperty, clamped);
   }
 
   /**
@@ -398,7 +435,10 @@ export default class LayerManager implements ILayerManager {
    * @param layerId - The ID of the layer to toggle.
    */
   toggleLayerVisibility(layerId: string): void {
-    if (!this.map) return;
+    if (!this.map) {
+      this.warn('toggleLayerVisibility: map is not initialized');
+      return;
+    }
 
     const current = this.map.getLayoutProperty(layerId, 'visibility');
 
@@ -452,7 +492,10 @@ export default class LayerManager implements ILayerManager {
    * - The method also updates the internal list of custom source IDs and the sources array.
    */
   addSources(newSources: Source[]): void {
-    if (!this.map) return;
+    if (!this.map) {
+      this.warn('addSources: map is not initialized');
+      return;
+    }
 
     newSources.forEach((source) => {
       this.map!.addSource(source.id, source.source);
@@ -474,7 +517,10 @@ export default class LayerManager implements ILayerManager {
    * - The method also removes the source from the internal list of sources.
    */
   removeSources(sourceIds: string[]): void {
-    if (!this.map) return;
+    if (!this.map) {
+      this.warn('removeSources: map is not initialized');
+      return;
+    }
 
     sourceIds.forEach((sourceId) => {
       if (!this.map!.getSource(sourceId)) return;
@@ -491,7 +537,10 @@ export default class LayerManager implements ILayerManager {
    * @param beforeLayerId - The ID of the layer before which the new layers will be added.
    */
   addLayers(newLayers: Layer[], beforeLayerId?: string): void {
-    if (!this.map) return;
+    if (!this.map) {
+      this.warn('addLayers: map is not initialized');
+      return;
+    }
 
     newLayers.forEach((layer) => {
       this.map!.addLayer(layer as AnyLayer, beforeLayerId);
@@ -505,7 +554,10 @@ export default class LayerManager implements ILayerManager {
    * @param layerIds - The IDs of the layers to remove.
    */
   removeLayers(layerIds: string[]): void {
-    if (!this.map) return;
+    if (!this.map) {
+      this.warn('removeLayers: map is not initialized');
+      return;
+    }
 
     layerIds.forEach((layerId) => {
       if (!this.map!.getLayer(layerId)) return;

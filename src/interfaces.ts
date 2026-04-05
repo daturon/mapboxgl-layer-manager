@@ -23,6 +23,8 @@ export interface LayerConfig {
 export interface LayerManagerOptions {
   /** Automatically create and start a LayerAnalyzer for this manager instance. */
   analyzer?: boolean;
+  /** Enable console warnings for no-op method calls (e.g. null map, missing layers). */
+  debug?: boolean;
 }
 
 export interface ILayerManager {
