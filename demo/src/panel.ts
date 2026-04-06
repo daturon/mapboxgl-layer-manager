@@ -13,6 +13,7 @@ import {
   type LayerGroup,
   type SourceGroup,
   type Preset,
+  type PresetFog,
 } from './data';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -326,19 +327,73 @@ export class Panel {
     return card;
   }
 
+  private readonly DEFAULT_FOG: PresetFog = {
+    color: 'rgb(15, 17, 23)',
+    'high-color': 'rgb(30, 40, 80)',
+    'horizon-blend': 0.02,
+    'space-color': 'rgb(5, 5, 15)',
+    'star-intensity': 0.6,
+  };
+
+  private stopAllAnimations(): void {
+    const map = this.manager.getMapInstance();
+    this.animGlobeSpin = false;
+    this.detachSpinHandlers();
+    this.animRouteDashes = false;
+    if (map?.getLayer('demo-flight-routes')) {
+      map.setPaintProperty('demo-flight-routes', 'line-dasharray', [3, 2]);
+    }
+    this.animPulseQuakes = false;
+    if (map?.getLayer('demo-earthquake-points')) {
+      map.setPaintProperty('demo-earthquake-points', 'circle-radius', [
+        'interpolate',
+        ['linear'],
+        ['get', 'mag'],
+        4,
+        4,
+        7,
+        12,
+        9,
+        24,
+      ]);
+    }
+    this.animMovingPlanes = false;
+    if (map?.getLayer('demo-planes')) {
+      map.setLayoutProperty('demo-planes', 'visibility', 'none');
+    }
+    this.stopAnimLoop();
+  }
+
   private applyPreset(preset: Preset): void {
     this.activePresetId = preset.id;
     this.layerOrder = [...preset.layerOrder].reverse();
     this.visibleLayerIds = new Set(preset.layerOrder);
+    if (preset.disableAnimations) this.stopAllAnimations();
     this.applyLayerOrder();
-    if (preset.view) {
-      const map = this.manager.getMapInstance();
-      map?.flyTo({
+    const map = this.manager.getMapInstance();
+    if (preset.view && map) {
+      map.flyTo({
         center: preset.view.center,
         zoom: preset.view.zoom,
         pitch: preset.view.pitch ?? 0,
-        duration: 1500,
+        bearing: preset.view.bearing ?? 0,
+        duration: 2000,
       });
+    }
+    if (map) {
+      if (preset.terrain) {
+        if (!map.getSource('mapbox-dem')) {
+          map.addSource('mapbox-dem', {
+            type: 'raster-dem',
+            url: 'mapbox://mapbox.mapbox-terrain-dem-v1',
+            tileSize: 512,
+          });
+        }
+        map.setTerrain({ source: 'mapbox-dem', exaggeration: preset.terrain.exaggeration });
+      } else {
+        map.setTerrain(null);
+      }
+      map.setFog(preset.fog ?? this.DEFAULT_FOG);
     }
     if (this.tabContentEl && this.activeTab === 'presets') {
       this.tabContentEl.innerHTML = '';

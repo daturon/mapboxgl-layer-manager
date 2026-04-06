@@ -306,6 +306,10 @@ export const SOURCES: Source[] = [
     id: 'demo-region-labels',
     source: { type: 'geojson', data: REGION_LABELS_GEOJSON },
   },
+  {
+    id: 'mapbox-dem',
+    source: { type: 'raster-dem', url: 'mapbox://mapbox.mapbox-terrain-dem-v1', tileSize: 512 },
+  },
 ];
 
 // ── Layer definitions (11 layers, 5 types) ────────────────────────────────────
@@ -542,6 +546,19 @@ export interface PresetView {
   center: [number, number];
   zoom: number;
   pitch?: number;
+  bearing?: number;
+}
+
+export interface PresetTerrain {
+  exaggeration: number;
+}
+
+export interface PresetFog {
+  color: string;
+  'high-color': string;
+  'horizon-blend': number;
+  'space-color': string;
+  'star-intensity': number;
 }
 
 export interface Preset {
@@ -551,6 +568,9 @@ export interface Preset {
   description: string;
   layerOrder: string[];
   view?: PresetView;
+  terrain?: PresetTerrain;
+  fog?: PresetFog;
+  disableAnimations?: boolean;
 }
 
 export const PRESETS: Preset[] = [
@@ -626,6 +646,31 @@ export const PRESETS: Preset[] = [
     description: 'Clean capital city points and labels only',
     layerOrder: ['demo-capitals', 'demo-capitals-labels'],
     view: { center: [30, 25], zoom: 3.0, pitch: 0 },
+  },
+  {
+    id: 'cinematic',
+    label: 'Cinematic',
+    emoji: '🎬',
+    description:
+      '3D Alps — country fills below landcover, contours above, borders on top. Shows renderOrderedLayers restack.',
+    // Deliberately non-default order: country-fill buried under landcover, borders surfaced above contours
+    layerOrder: [
+      'demo-country-fill',
+      'demo-landcover',
+      'demo-terrain-contours',
+      'demo-country-borders',
+      'demo-capitals',
+    ],
+    view: { center: [10.5, 46.9], zoom: 11, pitch: 70, bearing: -30 },
+    terrain: { exaggeration: 1.8 },
+    fog: {
+      color: 'rgb(180, 195, 210)',
+      'high-color': 'rgb(60, 80, 130)',
+      'horizon-blend': 0.06,
+      'space-color': 'rgb(5, 5, 20)',
+      'star-intensity': 0.5,
+    },
+    disableAnimations: true,
   },
 ];
 
